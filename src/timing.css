@@ -1,0 +1,25 @@
+/* CSS for the console selection */
+.console-selection {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+.console {
+  background-color: aliceblue;
+  width: 120px;
+  height: 60px;
+  border: 1px solid #333;
+  margin: 10px;
+  text-align: center;
+  line-height: 60px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.console:hover {
+  background-color: #0078d4; /* Highlight color on hover */
+  color: white;
+}
+
+/* Additional styling as needed */

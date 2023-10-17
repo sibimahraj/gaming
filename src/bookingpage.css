@@ -1,0 +1,187 @@
+*{
+    box-sizing: border-box;
+}
+.body{
+  background-image: url("https://images.pexels.com/photos/3165335/pexels-photo-3165335.jpeg?cs=srgb&dl=pexels-lucie-liz-3165335.jpg&fm=jpg");
+  background-size: 100%;
+  height: 100vh;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  padding-top: 20vh;
+  position: relative;
+  
+}
+
+  @import url(https://db.onlinewebfonts.com/c/4c19fc875e7ba1e6831129de3ab5ac0b?family=Retro+Gaming);
+  @font-face {
+    font-family: "Retro Gaming";
+    src: url("https://db.onlinewebfonts.com/t/4c19fc875e7ba1e6831129de3ab5ac0b.eot");
+    src: url("https://db.onlinewebfonts.com/t/4c19fc875e7ba1e6831129de3ab5ac0b.eot?#iefix")format("embedded-opentype"),
+    url("https://db.onlinewebfonts.com/t/4c19fc875e7ba1e6831129de3ab5ac0b.woff2")format("woff2"),
+    url("https://db.onlinewebfonts.com/t/4c19fc875e7ba1e6831129de3ab5ac0b.woff")format("woff"),
+    url("https://db.onlinewebfonts.com/t/4c19fc875e7ba1e6831129de3ab5ac0b.ttf")format("truetype"),
+    url("https://db.onlinewebfonts.com/t/4c19fc875e7ba1e6831129de3ab5ac0b.svg#Retro Gaming")format("svg");
+}  
+
+.location-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+   
+    
+  }
+  .logo-card1{
+    background-image: url("https://assetsio.reedpopcdn.com/Marvel's-Spider-Man-2-(1).jpg?width=1200&height=900&fit=crop&quality=100&format=png&enable=upscale&auto=webp");
+    background-size: cover;
+    height: 42%;
+
+    
+  }
+  .logo-card2{
+    background-image: url("https://w0.peakpx.com/wallpaper/1023/921/HD-wallpaper-gaming-logo-god-of-war-ragnarok-god-of-war-ragnorok.jpg");
+    background-size: cover;
+    height: 42%;
+    }
+  
+  .location-card {
+    
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin: 10px;
+    width: 181px;
+    height: 110px;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.2s;
+  }
+
+  
+  .location-card:hover {
+    transform: scale(1.05);
+  }
+  .selected {
+    
+    border: 2px solid #007BFF;
+    
+  }
+  
+  
+  .location-card.selected .location-info {
+    color: orange; /* Text color for selected card content */
+  }
+  
+  
+  
+  img {
+    width: 100%;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+  }
+  
+  .location-info {
+    padding: 10px;
+    color: #ccc;
+    font-family: "Retro Gaming";
+    text-align: center;
+    
+  }
+  .loc-name1{
+    color: white;
+  }
+  
+  b {
+    margin: 0;
+  }
+  .loc-b{
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 3.5;
+    letter-spacing: 1;
+  }
+  
+  p {
+    margin: 5px 0;
+    font-size: 14px;
+  }
+  
+  button {
+    background-color: #007BFF;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    padding: 5px 10px;
+    cursor: pointer;
+  }
+  
+  button:hover {
+    background-color: #0056b3;
+  }
+ .date-container{
+    text-align: center;
+    margin-top: 20%;
+}
+
+.date-p{
+  font-size: 25px;
+  font-weight: 600;
+  color: #ccc;
+  text-transform: uppercase;
+  }
+input[type="date"] {
+  border: 2px solid #007BFF;
+  border-radius: 5px;
+  padding: 10px;
+  font-size: 16px;
+  cursor: pointer;
+}
+input[type="date"] {
+  background: url('C:\Users\SIBIMAHRAJ\Downloads\game-control.png') no-repeat 95% 50%;
+}
+input[type="date"]:focus,
+input[type="date"]:hover {
+  border-color: #0056b3;
+}
+
+
+
+input[type="date"] {
+  transition: border-color 0.2s;
+}
+input[type="date"] {
+  font-family: "Retro Gaming", sans-serif;
+  color: #0b0b0b;
+}
+.error {
+  input[type="date"] {
+      border-color: red;
+  }
+}
+.nxt-div{
+  position: absolute;
+  right: 8px;
+  bottom: 20px;
+}
+
+
+.next-btn {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #007BFF; /* A typical gaming blue color */
+  border: none;
+  color: #fff; /* White text */
+  font-size: 20px;
+  font-weight: bold;
+  border-radius: 5px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  
+  
+}
+
+.next-btn:hover {
+  background-color: #0056b3; /* Slightly darker blue on hover */
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); /* Add a subtle shadow on hover */
+}

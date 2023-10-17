@@ -1,0 +1,19 @@
+{
+    "console-gaming": [
+ 
+     {
+         "id":1,
+ 
+        "consoles" :[ { "console":"ps5"},
+        { "console":"ps5 premium"},
+        { "console":"xbox"},
+         {"console":"xbox premium"},
+         {"console":"vr"}]
+ 
+     }
+ 
+     
+ 
+ 
+     ]
+ }

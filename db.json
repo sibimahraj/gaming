@@ -1,0 +1,37 @@
+{
+    "console-gamings": [
+ 
+     {
+       "consolename": "ps5-1",
+       "availabletimeslot":[]  
+ 
+       
+ 
+     },
+     {
+        "consolename": "ps5-2",
+        "availabletimeslot":[]  
+  
+        
+  
+      },
+      {
+        "consolename": "xbox-1",
+        "availabletimeslot":[]  
+  
+        
+  
+      },
+      {
+        "consolename": "xbox-2",
+        "availabletimeslot":[]  
+  
+        
+  
+      }
+ 
+     
+ 
+ 
+     ]
+ }

@@ -1,0 +1,123 @@
+{
+  "customer": [
+    {},
+    {
+      "id": "df749676-8e7b-49d5-8afa-331970826681",
+      "name": "",
+      "noofmembers": "",
+      "mobileno": "",
+      "timing": [
+        "9.00pm"
+      ]
+    },
+    {
+      "id": "a27a83af-3289-42e5-b906-6f9baf4706d4",
+      "name": "",
+      "noofmembers": "",
+      "mobileno": "",
+      "timing": [
+        "ps5 premium"
+      ]
+    },
+    {
+      "id": "722da44e-8f5e-4871-bcd0-f0a4d4bd78bd",
+      "name": "",
+      "noofmembers": "",
+      "mobileno": "",
+      "timing": [
+        "ps5 premium",
+        "xbox"
+      ],
+      "selectedConsoles": [
+        "ps5 premium",
+        "xbox"
+      ]
+    },
+    {
+      "id": "b7204914-b0bf-49c9-8bd6-d69c231c75c1",
+      "name": "",
+      "noofmembers": "",
+      "mobileno": "",
+      "timing": [],
+      "selectedConsoles": []
+    },
+    {
+      "id": "b0efa267-be4e-4aa6-a1bc-1cac89896eb9",
+      "name": "",
+      "noofmembers": "",
+      "mobileno": "",
+      "timing": [
+        "ps5 premium",
+        "xbox"
+      ],
+      "selectedConsoles": [
+        "ps5 premium",
+        "xbox"
+      ]
+    },
+    {
+      "id": "f7edd225-3d8c-4a75-8742-373450fb72cf",
+      "name": "",
+      "noofmembers": "",
+      "mobileno": "",
+      "timing": [
+        "ps5"
+      ],
+      "selectedConsoles": [
+        "ps5"
+      ]
+    },
+    {
+      "id": "ad7938bc-71fe-45e0-ac2d-09d492d55293",
+      "name": "",
+      "noofmembers": "",
+      "mobileno": "",
+      "timing": [
+        "ps5 premium",
+        "xbox"
+      ],
+      "selectedConsoles": [
+        "ps5 premium",
+        "xbox"
+      ]
+    },
+    {
+      "id": "eaf35da2-bc5f-473e-a783-54f2b2f10b27",
+      "name": "",
+      "noofmembers": "",
+      "mobileno": "",
+      "timing": [
+        "ps5 premium",
+        "xbox",
+        "vr"
+      ],
+      "selectedConsoles": [
+        "ps5 premium",
+        "xbox",
+        "vr"
+      ]
+    },
+    {
+      "id": "a340bfcf-dcce-4e9e-9260-5ec5a3fc5c28",
+      "name": "",
+      "noofmembers": "",
+      "mobileno": "",
+      "timing": [],
+      "selectedConsoles": []
+    },
+    {
+      "id": "96c222ba-49b2-45c5-8265-5b40541db5e7",
+      "name": "",
+      "noofmembers": "",
+      "mobileno": "",
+      "timing": [
+        "ps5",
+        "ps5 premium"
+      ],
+      "selectedConsoles": [
+        "ps5",
+        "ps5 premium"
+      ]
+    }
+  ]
+}
