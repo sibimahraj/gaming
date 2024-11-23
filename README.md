@@ -880,3 +880,153 @@ const ThankYou = () => {
 
 export default ThankYou;
 
+
+import { render, screen, fireEvent, act } from "@testing-library/react";
+import { Provider } from "react-redux";
+import { BrowserRouter } from "react-router-dom";
+import ThankYou from "./ThankYou";
+import { store } from "../../../utils/store/store";
+import * as gaTrackEvents from "../../../services/ga-track-events";
+import * as trackEvents from "../../../services/track-events";
+import thankyouData from "../../../assets/_json/thankyou.json";
+
+jest.mock("../../../services/ga-track-events", () => ({
+  pageView: jest.fn(),
+}));
+
+jest.mock("../../../services/track-events", () => ({
+  triggerAdobeEvent: jest.fn(),
+}));
+
+const mockStageSelector = [
+  {
+    stageInfo: {
+      application: {
+        application_reference: "mockApplicationRef123",
+      },
+      products: [
+        {
+          product_category: "CC",
+          name: "Credit Card",
+          product_sequence_number: "001",
+          product_type: "Card",
+          acct_details: [
+            {
+              account_number: "123456789",
+              card_no: "987654321",
+            },
+          ],
+        },
+      ],
+      applicants: {
+        auth_mode_a_1: "IX",
+        embossed_name_a_1: "Test User",
+      },
+    },
+    stageId: "mockStageId",
+  },
+];
+
+jest.mock("react-redux", () => ({
+  useSelector: jest.fn((fn) => fn({ stages: { stages: mockStageSelector } })),
+  useDispatch: jest.fn(() => jest.fn()),
+}));
+
+jest.mock("../../../utils/common/change.utils", () => ({
+  getUrl: {
+    getParameterByName: jest.fn((name) => (name === "auth" ? "upload" : null)),
+  },
+}));
+
+jest.mock("../../../shared/components/model/model", () => () => (
+  <div>Mocked Model Component</div>
+));
+
+jest.mock("../../../shared/components/popup-model/popup-model", () => () => (
+  <div>Mocked PopupModel Component</div>
+));
+
+jest.mock("./thankyou-cc", () => () => (
+  <div>Mocked ThankYouCC Component</div>
+));
+
+jest.mock("./thankyou-upload", () => () => (
+  <div>Mocked ThankYouUpload Component</div>
+));
+
+jest.mock("./cc-without-activation", () => () => (
+  <div>Mocked CCWithoutActivation Component</div>
+));
+
+jest.mock("./cc-activation-success", () => () => (
+  <div>Mocked CCActivationSuccess Component</div>
+));
+
+jest.mock("./thankyou-error", () => () => (
+  <div>Mocked ThankYouError Component</div>
+));
+
+describe("ThankYou Component", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  const renderComponent = () =>
+    render(
+      <Provider store={store}>
+        <BrowserRouter>
+          <ThankYou />
+        </BrowserRouter>
+      </Provider>
+    );
+
+  test("renders the ThankYou component correctly", () => {
+    renderComponent();
+    expect(screen.getByText("Mocked ThankYouUpload Component")).toBeInTheDocument();
+  });
+
+  test("renders ThankYouCC component when productCategory is CC", () => {
+    renderComponent();
+    expect(screen.getByText("Mocked ThankYouCC Component")).toBeInTheDocument();
+  });
+
+  test("calls gaTrackEvents.pageView and trackEvents.triggerAdobeEvent", () => {
+    renderComponent();
+    expect(gaTrackEvents.pageView).toHaveBeenCalledWith("mockStageId");
+    expect(trackEvents.triggerAdobeEvent).toHaveBeenCalledWith("formSubmit");
+  });
+
+  test("handles showContinuePopup and displays PopupModel", () => {
+    renderComponent();
+    const continueButton = screen.getByText("Mocked ThankYouCC Component");
+    act(() => {
+      fireEvent.click(continueButton);
+    });
+    expect(screen.getByText("Mocked PopupModel Component")).toBeInTheDocument();
+  });
+
+  test("displays CCWithoutActivation UI when continueWithoutActivation is invoked", () => {
+    renderComponent();
+    act(() => {
+      fireEvent.click(screen.getByText("Mocked ThankYouCC Component"));
+    });
+    expect(screen.getByText("Mocked CCWithoutActivation Component")).toBeInTheDocument();
+  });
+
+  test("displays CCActivationSuccess UI on activation success", () => {
+    renderComponent();
+    act(() => {
+      fireEvent.click(screen.getByText("Mocked ThankYouCC Component"));
+    });
+    expect(screen.getByText("Mocked CCActivationSuccess Component")).toBeInTheDocument();
+  });
+
+  test("renders ThankYouError component on error UI display", () => {
+    renderComponent();
+    act(() => {
+      fireEvent.click(screen.getByText("Mocked ThankYouCC Component"));
+    });
+    expect(screen.getByText("Mocked ThankYouError Component")).toBeInTheDocument();
+  });
+});
+
