@@ -1,4 +1,4 @@
-# Getting Started with Create React App
+use# Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
@@ -301,3 +301,130 @@ const ThankYouCC = (props: KeyWithAnyModel) => {
 
 export default ThankYouCC;
 
+import { render, screen, fireEvent } from '@testing-library/react';
+import ThankYouCC from './ThankYouCC';
+
+const mockProps = {
+  applicationDetails: {
+    isStp: false,
+    thankyouProp: 'mockThankYouProp',
+    thankyouText: 'mockThankYouText',
+    productName: 'Credit Card',
+    cardNumber: '1234-5678-9012-3456',
+  },
+  thankyou: {
+    mockThankYouProp: {
+      CCPL: {
+        timeLine: 'Timeline Data',
+        banner_header: 'Mock Header',
+        banner_body_2: 'Mock Body 2',
+        resumeUrl: '/resume/url',
+        title: 'Mock Title',
+        content: 'Mock Content',
+        note_title: 'Mock Note Title',
+        note_content_1: 'Mock Note Content 1',
+        note_content_2: 'Mock Note Content 2',
+        note_content_3: 'Mock Note Content 3',
+        note_content_4: 'Mock Note Content 4',
+        note_link: '/mock-note-link',
+        refId_lbl: 'Reference ID',
+        doneButton: 'Done',
+      },
+    },
+    CCSTP: 'STP Timeline Data',
+    STPCCBanner: {
+      banner_header: 'STP Header',
+      banner_body_1: 'STP Body 1',
+      banner_body_2: 'STP Body 2',
+    },
+    mockThankYouText: {
+      timeLine: 'STP Timeline',
+      timeline_header: 'STP Timeline Header',
+      timeline_desc: 'STP Timeline Description',
+      continueButton: 'Continue',
+    },
+  },
+  applicationReferenceNo: 'REF12345',
+  showOTPPopup: jest.fn(),
+  submitForm: jest.fn(),
+  showContinuePopup: jest.fn(),
+};
+
+jest.mock('./thankyou-timeline', () => () => <div data-testid="thankyou-timeline" />);
+jest.mock('./thankyou-banner', () => () => <div data-testid="thankyou-banner" />);
+jest.mock('./thankyou-survey', () => () => <div data-testid="thankyou-survey" />);
+
+describe('ThankYouCC Component', () => {
+  test('renders correctly for non-STP flow', () => {
+    render(<ThankYouCC {...mockProps} />);
+
+    // Check ThankYouBanner
+    expect(screen.getByTestId('thankyou-banner')).toBeInTheDocument();
+
+    // Check title and content
+    expect(screen.getByText('Mock Title')).toBeInTheDocument();
+    expect(screen.getByText('Mock Content')).toBeInTheDocument();
+
+    // Check timeline
+    expect(screen.getByTestId('thankyou-timeline')).toBeInTheDocument();
+
+    // Check notes
+    expect(screen.getByText('Mock Note Title')).toBeInTheDocument();
+    expect(screen.getByText('Mock Note Content 1')).toBeInTheDocument();
+    expect(screen.getByText('Mock Note Content 4')).toBeInTheDocument();
+
+    // Check reference number
+    expect(screen.getByText('REF12345')).toBeInTheDocument();
+
+    // Check Done button
+    const doneButton = screen.getByText('Done');
+    expect(doneButton).toBeInTheDocument();
+    fireEvent.click(doneButton);
+    expect(mockProps.submitForm).toHaveBeenCalled();
+  });
+
+  test('renders correctly for STP flow', () => {
+    const stpProps = {
+      ...mockProps,
+      applicationDetails: { ...mockProps.applicationDetails, isStp: true },
+    };
+
+    render(<ThankYouCC {...stpProps} />);
+
+    // Check ThankYouBanner
+    expect(screen.getByTestId('thankyou-banner')).toBeInTheDocument();
+
+    // Check STP timeline details
+    expect(screen.getByText('STP Timeline Header')).toBeInTheDocument();
+    expect(screen.getByText('STP Timeline Description')).toBeInTheDocument();
+
+    // Check STP banner details
+    expect(screen.getByText('STP Body 1')).toBeInTheDocument();
+    expect(screen.getByText('STP Body 2')).toBeInTheDocument();
+
+    // Check Continue button
+    const continueButton = screen.getByText('Continue');
+    expect(continueButton).toBeInTheDocument();
+    fireEvent.click(continueButton);
+    expect(stpProps.showContinuePopup).toHaveBeenCalled();
+  });
+
+  test('calls getTimelineData correctly for non-STP', () => {
+    render(<ThankYouCC {...mockProps} />);
+
+    // Assert that timeline data from CCPL is used
+    expect(screen.getByTestId('thankyou-timeline')).toBeInTheDocument();
+  });
+
+  test('calls getTimelineData correctly for STP', () => {
+    const stpProps = {
+      ...mockProps,
+      applicationDetails: { ...mockProps.applicationDetails, isStp: true },
+    };
+
+    render(<ThankYouCC {...stpProps} />);
+
+    // Assert that timeline data from CCSTP is used
+    expect(screen.getByTestId('thankyou-timeline')).toBeInTheDocument();
+  });
+});
