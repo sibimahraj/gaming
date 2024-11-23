@@ -96,3 +96,65 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 ### `npm run build` fails to minify
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+
+import React from "react";
+import { shallow } from "enzyme";
+import { useSelector } from "react-redux";
+import ThankYouSurvey from "./thank-you";
+import thankyouData from "../../../assets/_json/thankyou.json";
+import * as changeUtils from "../../../utils/common/change.utils";
+
+jest.mock("react-redux", () => ({
+  useSelector: jest.fn(),
+}));
+
+jest.mock("../../../utils/common/change.utils", () => ({
+  getUrl: {
+    getChannelRefNo: jest.fn(),
+  },
+}));
+
+describe("ThankYouSurvey Component", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("should render ThankYouSurvey component with the correct survey link", () => {
+    // Mock `useSelector` to return stageSelector
+    (useSelector as jest.Mock).mockReturnValue([
+      {
+        stageInfo: {
+          products: [
+            {
+              product_category: "CC",
+            },
+          ],
+        },
+      },
+    ]);
+
+    // Mock `getUrl.getChannelRefNo`
+    (changeUtils.getUrl.getChannelRefNo as jest.Mock).mockReturnValue({
+      applicationRefNo: "12345",
+    });
+
+    // Render the component
+    const wrapper = shallow(<ThankYouSurvey />);
+
+    // Verify the rendered content
+    expect(wrapper.find(".thankyou__feedback").exists()).toBe(true);
+    expect(wrapper.text()).toContain(thankyouData.Survey.content_1);
+    expect(wrapper.text()).toContain(thankyouData.Survey.content_2);
+    expect(wrapper.text()).toContain(thankyouData.Survey.content_3);
+
+    // Verify the survey link is constructed correctly
+    const expectedLink =
+      thankyouData.Survey.link +
+      "&p=CC&m=sg&c=12345";
+    const surveyLink = wrapper.find("a").prop("href");
+
+    expect(surveyLink).toBe(expectedLink);
+    expect(wrapper.find("a").prop("target")).toBe("_blank");
+    expect(wrapper.find("a").prop("rel")).toBe("feedback noreferrer");
+  });
+});
