@@ -21,6 +21,34 @@ See the section about [running tests](https://facebook.github.io/create-react-ap
 
 ### `npm run build`
 
+
+
+import "./thank-you.scss";
+import { KeyWithAnyModel, StoreModel } from "../../../utils/model/common-model";
+import thankyouData from "../../../assets/_json/thankyou.json";
+import { useSelector} from "react-redux";
+import { getUrl } from "../../../utils/common/change.utils";
+
+const ThankYouSurvey = (props: KeyWithAnyModel) => {
+const thankyou: KeyWithAnyModel = thankyouData;
+const stageSelector = useSelector((state: StoreModel) => state.stages.stages);
+const applicationReferenceNo = getUrl.getChannelRefNo().applicationRefNo;
+const survey_link = "&p="+stageSelector[0].stageInfo.products[0].product_category+"&m=sg"+"&c="+applicationReferenceNo;
+
+  return (
+    <div className="thankyou__feedback">
+    {thankyou.Survey.content_1}
+    <a target="_blank" 
+    rel="feedback noreferrer" 
+    href={thankyou.Survey.link+survey_link} >
+    {thankyou.Survey.content_2}</a>
+    {thankyou.Survey.content_3}
+  </div>
+  );
+};
+
+export default ThankYouSurvey;
+
 Builds the app for production to the `build` folder.\
 It correctly bundles React in production mode and optimizes the build for the best performance.
 
