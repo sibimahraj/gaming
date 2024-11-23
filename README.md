@@ -1561,3 +1561,144 @@ const ReviewPage = (props: KeyWithAnyModel) => {
 };
 
 export default ReviewPage;
+
+import React from "react";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { useDispatch, useSelector } from "react-redux";
+import ReviewPage from "./review-page";
+import reviewpageData from "../../../assets/_json/review.json";
+import { dispatchLoader, getProductCategory } from "../../../services/common-service";
+
+// Mock Redux hooks and external modules
+jest.mock("react-redux", () => ({
+  useDispatch: jest.fn(),
+  useSelector: jest.fn(),
+}));
+
+jest.mock("../../../services/common-service", () => ({
+  dispatchLoader: jest.fn(),
+  getProductCategory: jest.fn(),
+}));
+
+jest.mock("../../../shared/components/checkbox/checkbox", () => jest.fn((props) => (
+  <div data-testid="checkbox" onClick={() => props.setCheckedStatus(!props.checkedStatus)}>
+    Checkbox
+  </div>
+)));
+
+describe("ReviewPage Component", () => {
+  let mockDispatch: jest.Mock;
+  const mockStageSelector = [
+    {
+      stageInfo: {
+        products: [
+          {
+            name: "Test Product",
+          },
+        ],
+      },
+    },
+  ];
+
+  beforeEach(() => {
+    // Reset mocks
+    mockDispatch = jest.fn();
+    (useDispatch as jest.Mock).mockReturnValue(mockDispatch);
+    (useSelector as jest.Mock).mockReturnValue(mockStageSelector);
+    (getProductCategory as jest.Mock).mockReturnValue("CC");
+
+    jest.clearAllMocks();
+  });
+
+  it("should render ReviewPage with CCPL content", () => {
+    render(<ReviewPage />);
+
+    // Check CCPL content is rendered
+    expect(screen.getByText(reviewpageData.CCPL.reviewTitle1)).toBeInTheDocument();
+    expect(screen.getByText("Checkbox")).toBeInTheDocument();
+
+    // Verify loader dispatch
+    expect(dispatchLoader).toHaveBeenCalledWith(false);
+  });
+
+  it("should render CASA content when product category is CA or SA", () => {
+    (getProductCategory as jest.Mock).mockReturnValue("CA");
+    render(<ReviewPage />);
+
+    // CASA content assertions
+    expect(screen.getByText(reviewpageData.confirm.reviewPageHeader1)).toBeInTheDocument();
+    expect(screen.getByText(reviewpageData.confirm.reviewDesc_1)).toBeInTheDocument();
+  });
+
+  it("should set product details and product category on mount", () => {
+    render(<ReviewPage />);
+
+    // Verify product name is set correctly
+    expect(screen.getByText("Test Product")).toBeInTheDocument();
+
+    // Verify product category is fetched and content rendered
+    expect(getProductCategory).toHaveBeenCalledWith(mockStageSelector[0].stageInfo.products);
+    expect(screen.getByText(reviewpageData.CCPL.reviewHeader)).toBeInTheDocument();
+  });
+
+  it("should toggle tooltip visibility when icon is clicked", () => {
+    render(<ReviewPage />);
+
+    // Tooltip toggle
+    const tooltipIcon = screen.getByClassName("tool-tip");
+    expect(tooltipIcon).toBeInTheDocument();
+
+    fireEvent.click(tooltipIcon);
+    expect(screen.getByText("review")).toBeInTheDocument();
+
+    fireEvent.click(tooltipIcon);
+    expect(screen.queryByText("review")).not.toBeInTheDocument();
+  });
+
+  it("should update checkbox state and call prop function", () => {
+    const mockUpdateCheckboxStatus = jest.fn();
+
+    render(<ReviewPage updateCheckboxStatus={mockUpdateCheckboxStatus} />);
+
+    // Simulate checkbox click
+    const checkbox = screen.getByTestId("checkbox");
+    fireEvent.click(checkbox);
+
+    expect(mockUpdateCheckboxStatus).toHaveBeenCalledWith(true);
+
+    fireEvent.click(checkbox);
+    expect(mockUpdateCheckboxStatus).toHaveBeenCalledWith(false);
+  });
+
+  it("should filter and render dynamic links for CCPL content", () => {
+    render(<ReviewPage />);
+
+    const links = reviewpageData.CCPLReviewContent.contentLink;
+    Object.entries(links).forEach(([key, value]) => {
+      expect(screen.getByText(value.name)).toBeInTheDocument();
+    });
+  });
+
+  it("should render PL-specific content when product category is PL", () => {
+    (getProductCategory as jest.Mock).mockReturnValue("PL");
+    render(<ReviewPage />);
+
+    // PL content assertions
+    expect(screen.getByText(reviewpageData.PL.reviewContent1)).toBeInTheDocument();
+  });
+
+  it("should handle dispatch call when component mounts", () => {
+    render(<ReviewPage />);
+
+    // Verify dispatch call for loader
+    expect(mockDispatch).toHaveBeenCalledWith(false);
+  });
+
+  it("should set isChecked to true if isHideTooltipIcon is true", () => {
+    (getProductCategory as jest.Mock).mockReturnValue("CA");
+
+    render(<ReviewPage />);
+
+    expect(screen.getByTestId("checkbox")).toBeInTheDocument();
+  });
+});
