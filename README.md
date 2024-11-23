@@ -495,3 +495,78 @@ const survey_link = "&p="+stageSelector[0].stageInfo.products[0].product_categor
 };
 
 export default ThankYouSurvey;
+
+import { render, screen } from '@testing-library/react';
+import { useSelector } from 'react-redux';
+import ThankYouSurvey from './ThankYouSurvey';
+import thankyouData from '../../../assets/_json/thankyou.json';
+import { getUrl } from '../../../utils/common/change.utils';
+
+jest.mock('react-redux', () => ({
+  useSelector: jest.fn(),
+}));
+
+jest.mock('../../../utils/common/change.utils', () => ({
+  getUrl: {
+    getChannelRefNo: jest.fn(),
+  },
+}));
+
+describe('ThankYouSurvey Component', () => {
+  beforeEach(() => {
+    // Mock the Redux selector
+    (useSelector as jest.Mock).mockReturnValue([
+      {
+        stageInfo: {
+          products: [
+            {
+              product_category: 'mockCategory',
+            },
+          ],
+        },
+      },
+    ]);
+
+    // Mock the getUrl function
+    (getUrl.getChannelRefNo as jest.Mock).mockReturnValue({
+      applicationRefNo: 'mockRefNo',
+    });
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  test('renders survey content correctly', () => {
+    render(<ThankYouSurvey />);
+
+    // Verify thankyouData content
+    expect(screen.getByText(thankyouData.Survey.content_1)).toBeInTheDocument();
+    expect(screen.getByText(thankyouData.Survey.content_2)).toBeInTheDocument();
+    expect(screen.getByText(thankyouData.Survey.content_3)).toBeInTheDocument();
+  });
+
+  test('constructs survey link correctly', () => {
+    render(<ThankYouSurvey />);
+
+    // Verify survey link
+    const surveyLink = screen.getByRole('link', {
+      name: thankyouData.Survey.content_2,
+    });
+
+    const expectedLink = `${thankyouData.Survey.link}&p=mockCategory&m=sg&c=mockRefNo`;
+    expect(surveyLink).toHaveAttribute('href', expectedLink);
+  });
+
+  test('renders a survey link with target and rel attributes', () => {
+    render(<ThankYouSurvey />);
+
+    const surveyLink = screen.getByRole('link', {
+      name: thankyouData.Survey.content_2,
+    });
+
+    // Check attributes
+    expect(surveyLink).toHaveAttribute('target', '_blank');
+    expect(surveyLink).toHaveAttribute('rel', 'feedback noreferrer');
+  });
+});
