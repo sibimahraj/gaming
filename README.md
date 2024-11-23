@@ -1200,3 +1200,148 @@ const ReviewPage = (props: KeyWithAnyModel) => {
 
 export default ReviewPage;
 
+import { render, screen, fireEvent } from "@testing-library/react";
+import { Provider } from "react-redux";
+import configureStore from "redux-mock-store";
+import ReviewPage from "./review-page";
+import reviewpageData from "../../../assets/_json/review.json";
+
+const mockStore = configureStore([]);
+const mockDispatch = jest.fn();
+
+jest.mock("../../../services/common-service", () => ({
+  dispatchLoader: jest.fn(),
+  getProductCategory: jest.fn(() => "CC"),
+}));
+
+jest.mock("../../../utils/common/change.utils", () => ({
+  authenticateType: jest.fn(() => "manual"),
+}));
+
+jest.mock("react-redux", () => ({
+  useSelector: jest.fn(),
+  useDispatch: () => mockDispatch,
+}));
+
+describe("ReviewPage Component", () => {
+  let store;
+
+  beforeEach(() => {
+    store = mockStore({
+      stages: {
+        stages: [
+          {
+            stageInfo: {
+              products: [
+                { name: "Product Name", category: "CC" },
+              ],
+            },
+          },
+        ],
+      },
+    });
+  });
+
+  const renderComponent = (props = {}) => {
+    render(
+      <Provider store={store}>
+        <ReviewPage {...props} />
+      </Provider>
+    );
+  };
+
+  test("renders CASA content when product category is CA or SA", () => {
+    jest.spyOn(require("../../../services/common-service"), "getProductCategory").mockReturnValue("CA");
+    renderComponent();
+
+    expect(screen.getByText(reviewpageData.confirm.reviewPageHeader1)).toBeInTheDocument();
+    expect(screen.getByText(reviewpageData.confirm.reviewDesc_1)).toBeInTheDocument();
+  });
+
+  test("renders CCPL content when product category is CC", () => {
+    jest.spyOn(require("../../../services/common-service"), "getProductCategory").mockReturnValue("CC");
+    renderComponent();
+
+    expect(screen.getByText(reviewpageData.CCPL.reviewTitle1)).toBeInTheDocument();
+    expect(screen.getByText(reviewpageData.CCPLReviewContent.contentHeading)).toBeInTheDocument();
+  });
+
+  test("displays tooltip when tooltip icon is clicked", () => {
+    renderComponent();
+
+    const tooltipIcon = screen.getByClass("tool-tip");
+    fireEvent.click(tooltipIcon);
+
+    expect(screen.getByText("review")).toBeInTheDocument();
+  });
+
+  test("checks if checkbox is selected when isHideTooltipIcon is true", () => {
+    jest.spyOn(require("../../../services/common-service"), "getProductCategory").mockReturnValue("CA");
+    const mockUpdateCheckboxStatus = jest.fn();
+
+    renderComponent({ updateCheckboxStatus: mockUpdateCheckboxStatus });
+
+    expect(mockUpdateCheckboxStatus).toHaveBeenCalledWith(true);
+  });
+
+  test("handles checkbox state update", () => {
+    const mockUpdateCheckboxStatus = jest.fn();
+
+    renderComponent({ updateCheckboxStatus: mockUpdateCheckboxStatus });
+
+    const checkbox = screen.getByRole("checkbox");
+    fireEvent.click(checkbox);
+
+    expect(mockUpdateCheckboxStatus).toHaveBeenCalled();
+  });
+
+  test("renders product name", () => {
+    renderComponent();
+
+    expect(screen.getByText("Product Name")).toBeInTheDocument();
+  });
+
+  test("renders links for CCPL content", () => {
+    jest.spyOn(require("../../../services/common-service"), "getProductCategory").mockReturnValue("CC");
+    renderComponent();
+
+    const links = reviewpageData.CCPLReviewContent.contentLink;
+    Object.entries(links).forEach(([key, value]) => {
+      expect(screen.getByText(value.name)).toBeInTheDocument();
+    });
+  });
+
+  test("renders PL-specific content when product category is PL", () => {
+    jest.spyOn(require("../../../services.common-service"), "getProductCategory").mockReturnValue("PL");
+    renderComponent();
+
+    expect(screen.getByText(reviewpageData.PL.reviewContent1)).toBeInTheDocument();
+  });
+
+  test("dispatches loader on mount", () => {
+    renderComponent();
+
+    expect(mockDispatch).toHaveBeenCalledWith(expect.any(Function));
+  });
+
+  test("updates props.updateCheckboxStatus based on isChecked", () => {
+    const mockUpdateCheckboxStatus = jest.fn();
+
+    renderComponent({ updateCheckboxStatus: mockUpdateCheckboxStatus });
+
+    expect(mockUpdateCheckboxStatus).toHaveBeenCalledWith(false);
+
+    const checkbox = screen.getByRole("checkbox");
+    fireEvent.click(checkbox);
+
+    expect(mockUpdateCheckboxStatus).toHaveBeenCalledWith(true);
+  });
+
+  test("renders tooltip icon when product category is CC", () => {
+    renderComponent();
+
+    const tooltipIcon = screen.getByClass("tool-tip__icon");
+    expect(tooltipIcon).toBeInTheDocument();
+  });
+});
+
