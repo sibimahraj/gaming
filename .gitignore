@@ -68,3 +68,173 @@ export const Alias = (props: KeyWithAnyModel) => {
 }
 
 export default Alias;
+
+import React from "react";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { Provider } from "react-redux";
+import configureStore from "redux-mock-store";
+import { Alias } from "./alias";
+import * as utils from "./alias.utils";
+
+jest.mock("./alias.utils", () => ({
+  getFields: jest.fn(),
+}));
+
+jest.mock("../../../modules/dashboard/fields/renderer", () =>
+  jest.fn(() => <div data-testid="render-component">Render Component</div>)
+);
+
+const mockStore = configureStore([]);
+describe("Alias Component", () => {
+  let store: any;
+  const mockDispatch = jest.fn();
+  const mockProps = {
+    handleCallback: jest.fn(),
+    handleFieldDispatch: jest.fn(),
+    value: "testValue",
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+
+    // Initial Redux store mock
+    store = mockStore({
+      stages: {
+        stages: [
+          {
+            stageInfo: {
+              products: [{ name: "Product A" }],
+            },
+          },
+        ],
+        journeyType: false,
+      },
+      alias: {
+        count: 1,
+        maxCount: 5,
+      },
+    });
+
+    // Mock useDispatch
+    jest.spyOn(React, "useDispatch").mockReturnValue(mockDispatch);
+  });
+
+  it("should render the Alias component correctly", () => {
+    const mockedFields = [
+      { id: 1, fieldName: "Field1" },
+      { id: 2, fieldName: "Field2" },
+    ];
+    (utils.getFields as jest.Mock).mockReturnValue(mockedFields);
+
+    render(
+      <Provider store={store}>
+        <Alias {...mockProps} />
+      </Provider>
+    );
+
+    // Verify that renderComponent is called for each field
+    expect(screen.getAllByTestId("render-component").length).toBe(mockedFields.length);
+  });
+
+  it("should render the Add Alias button if journeyType is false", () => {
+    render(
+      <Provider store={store}>
+        <Alias {...mockProps} />
+      </Provider>
+    );
+
+    // Check if the button is visible
+    const addAliasButton = screen.getByPlaceholderText("Enter Alias");
+    expect(addAliasButton).toBeInTheDocument();
+    expect(addAliasButton).toHaveClass("show-btn, button");
+  });
+
+  it("should call addNewAliasName function when the Add Alias button is clicked", () => {
+    const mockedFields = [{ id: 1, fieldName: "Field1" }];
+    (utils.getFields as jest.Mock).mockReturnValue(mockedFields);
+
+    render(
+      <Provider store={store}>
+        <Alias {...mockProps} />
+      </Provider>
+    );
+
+    const addAliasButton = screen.getByPlaceholderText("Enter Alias");
+
+    fireEvent.click(addAliasButton);
+
+    // Verify dispatch and setField are called
+    expect(utils.getFields).toHaveBeenCalledWith(
+      store.getState().stages.stages,
+      store.getState().alias,
+      "add"
+    );
+    expect(mockDispatch).toHaveBeenCalled();
+  });
+
+  it("should not render Add Alias button if max count is reached", () => {
+    store = mockStore({
+      stages: {
+        stages: [
+          {
+            stageInfo: {
+              products: [{ name: "Product A" }],
+            },
+          },
+        ],
+        journeyType: false,
+      },
+      alias: {
+        count: 5,
+        maxCount: 5, // Max count reached
+      },
+    });
+
+    render(
+      <Provider store={store}>
+        <Alias {...mockProps} />
+      </Provider>
+    );
+
+    const addAliasButton = screen.queryByPlaceholderText("Enter Alias");
+
+    // Button should not be rendered
+    expect(addAliasButton).toBeNull();
+  });
+
+  it("should call getFields and update state when aliasSelector changes", () => {
+    const mockedFields = [{ id: 1, fieldName: "Field1" }];
+    (utils.getFields as jest.Mock).mockReturnValue(mockedFields);
+
+    render(
+      <Provider store={store}>
+        <Alias {...mockProps} />
+      </Provider>
+    );
+
+    // Check if getFields is called initially
+    expect(utils.getFields).toHaveBeenCalledWith(
+      store.getState().stages.stages,
+      store.getState().alias,
+      "get"
+    );
+    expect(mockDispatch).toHaveBeenCalled();
+  });
+
+  it("should render components returned by renderComponent", () => {
+    const mockedFields = [
+      { id: 1, fieldName: "Field1" },
+      { id: 2, fieldName: "Field2" },
+    ];
+    (utils.getFields as jest.Mock).mockReturnValue(mockedFields);
+
+    render(
+      <Provider store={store}>
+        <Alias {...mockProps} />
+      </Provider>
+    );
+
+    // Verify that renderComponent is called for each field
+    expect(screen.getAllByTestId("render-component").length).toBe(mockedFields.length);
+  });
+});
