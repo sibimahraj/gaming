@@ -2068,3 +2068,29 @@ const MyinfoSingpassLogin = () => {
 
 export default MyinfoSingpassLogin;
 
+const [isNRICFilled, setIsNRICFilled] = useState(false);
+const [isPasswordFilled, setIsPasswordFilled] = useState(false);
+const [isButtonEnabled, setIsButtonEnabled] = useState(false);
+
+const changeHandler = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const { name, value } = event.target;
+
+  setsingpassCredential((prevUser: any) => {
+    const updatedCredentials = {
+      ...prevUser,
+      [name]: value,
+    };
+
+    // Check individual fields
+    setIsNRICFilled(updatedCredentials.nric.trim().length > 0);
+    setIsPasswordFilled(updatedCredentials.password.trim().length > 0);
+
+    // Enable the button only if both fields are filled
+    setIsButtonEnabled(
+      updatedCredentials.nric.trim().length > 0 &&
+      updatedCredentials.password.trim().length > 0
+    );
+
+    return updatedCredentials;
+  });
+};
