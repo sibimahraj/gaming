@@ -2094,3 +2094,69 @@ const changeHandler = (event: React.ChangeEvent<HTMLInputElement>) => {
     return updatedCredentials;
   });
 };
+
+ if (
+      (props.data.mandatory === "Yes" ||
+        props.data.mandatory === "Conditional") &&
+      event.target.value.length < 1 &&
+      props.data.logical_field_name !== "referral_id_2"
+    ) {
+      setError(`${errorMsg.emity} ${props.data.rwb_label_name}`);
+    } 
+    else if (
+      `${event.target.value}`[0] === " " ||
+      `${event.target.value}`[`${event.target.value}`.length - 1] === " "
+    ) {
+      setError(
+        `${props.data.rwb_label_name} cannot have leading or trailing spaces`
+      );
+    } else if (
+      props.data.regex &&
+      !`${event.target.value}`.match(props.data.regex) &&
+      props.data.logical_field_name !== "referral_id_2" && props.data.logical_field_name !== "name_of_business" &&
+      props.data.logical_field_name !== "full_name" &&props.data.logical_field_name !== "NRIC"
+) {
+      setError(`${errorMsg.patterns}${props.data.rwb_label_name} `);
+
+    }
+    else if (
+      props.data.regex &&
+      !`${event.target.value}`.match(props.data.regex) &&
+      props.data.logical_field_name !== "referral_id_2" && props.data.logical_field_name !== "name_of_business" &&
+      props.data.logical_field_name == "full_name"
+
+    ) {
+      setError(`${errorMsg.fullName} `);
+      
+    }
+     else if (
+      props.data.min_length &&
+      `${event.target.value}`.length < props.data.min_length &&
+      props.data.logical_field_name !== "referral_id_2"
+    ) {
+      setError(`${errorMsg.minLength} ${props.data.min_length} characters`);
+    } else if (
+      props.data.logical_field_name === "NRIC" &&
+      specialCharRegex.test(event.target.value) 
+      
+    ) {
+      setError(`${errorMsg.nricAn}`);
+    } else if(props.data.logical_field_name === "name_of_business" && event.target.value.length>1){
+      setError("");
+    } 
+    else {
+      setError(
+        !event.target.validity.valid &&
+        props.data.logical_field_name !== "referral_id_2"
+          ? `${errorMsg.patterns} ${props.data.rwb_label_name}`
+          : ""
+      );
+    }
+    // if (
+    //   props.data.logical_field_name === "referral_id_2" &&
+    //   referralcodeSelector &&
+    //   referralcodeSelector.errormsg !== ""
+    // ) {
+    //   setError("");
+    // }
+  };
