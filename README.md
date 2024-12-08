@@ -1,5 +1,11 @@
 
 
+  dispatch(
+              stagesAction.getStage({
+                  id: "bd-2",
+                  formConfig: response.data,
+             }));
+
 export default ThankYouSurvey;
 
 Builds the app for production to the `build` folder.\
