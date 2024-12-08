@@ -1,4 +1,9 @@
-
+export const stageFields = (
+  stageSelector: Array<StageDetails>,
+  stageId: string,
+  myinfoMissingFields?: any,
+  other?: string | undefined
+)
 
   dispatch(
               stagesAction.getStage({
