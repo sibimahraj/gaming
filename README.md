@@ -715,3 +715,146 @@ describe('Number Component changeHandler function', () => {
     expect(screen.getByText(/Invalid account number/)).toBeInTheDocument();
   });
 });
+
+
+import { renderHook, act } from '@testing-library/react-hooks';
+import { useDispatch } from 'react-redux';
+import { postalCodeValidation } from './number.utils';
+import { postalCodeAction } from '../../../utils/store/postal-code';
+import { errorMsg } from '../../../constants/errorMessages';
+import { Number } from './number';
+
+// Mock dependencies
+jest.mock('react-redux', () => ({
+  useDispatch: jest.fn(),
+}));
+
+jest.mock('./number.utils', () => ({
+  postalCodeValidation: jest.fn(),
+}));
+
+jest.mock('../../../utils/store/postal-code', () => ({
+  postalCodeAction: {
+    setPostalCode: jest.fn(),
+  },
+}));
+
+const mockDispatch = jest.fn();
+useDispatch.mockReturnValue(mockDispatch);
+
+const setup = () => {
+  const props = {
+    data: {
+      logical_field_name: 'postal_code',
+      rwb_label_name: 'Postal Code',
+      type: 'text',
+      mandatory: 'Yes',
+      regex: '\\d{5}',
+      min_length: 5,
+      length: 5,
+      editable: true,
+    },
+    handleCallback: jest.fn(),
+    handleFieldDispatch: jest.fn(),
+  };
+  const { result } = renderHook(() => Number(props));
+  return { result, props };
+};
+
+describe('changeHandler', () => {
+  it('should set default value and handle invalid input for mandatory field with empty value', () => {
+    const { result, props } = setup();
+    const event = {
+      target: { value: '', validity: { valid: false } },
+    };
+    act(() => {
+      result.current.changeHandler('postal_code', event);
+    });
+
+    expect(result.current.defaultValue).toBe('');
+    expect(props.handleCallback).toHaveBeenCalledWith(props.data, '');
+    expect(result.current.error).toBe(`${errorMsg.emity} ${props.data.rwb_label_name}`);
+  });
+
+  it('should handle invalid input with regex pattern mismatch', () => {
+    const { result, props } = setup();
+    const event = {
+      target: { value: '1234', validity: { valid: false } },
+    };
+    act(() => {
+      result.current.changeHandler('postal_code', event);
+    });
+
+    expect(result.current.defaultValue).toBe('1234');
+    expect(result.current.error).toBe(`${errorMsg.patterns} ${props.data.rwb_label_name}`);
+  });
+
+  it('should handle invalid input with length less than min_length', () => {
+    const { result, props } = setup();
+    const event = {
+      target: { value: '1234', validity: { valid: false } },
+    };
+    act(() => {
+      result.current.changeHandler('postal_code', event);
+    });
+
+    expect(result.current.defaultValue).toBe('1234');
+    expect(result.current.error).toBe(`${errorMsg.bankAccountMinLength} ${props.data.min_length} digits`);
+  });
+
+  it('should handle valid input and trigger postal code validation', async () => {
+    const { result, props } = setup();
+    const event = {
+      target: { value: '12345', validity: { valid: true } },
+    };
+    const channelReference = '12345';
+    const stageInfo = {
+      application: { channel_reference: channelReference },
+      applicants: {},
+    };
+
+    act(() => {
+      result.current.changeHandler('postal_code', event);
+    });
+
+    expect(result.current.error).toBe('');
+    expect(result.current.postalValue).toBe('12345');
+    expect(result.current.isPostalCodeFetch).toBe(true);
+
+    await act(async () => {
+      await postalCodeValidation.mockResolvedValue({ some: 'response' });
+    });
+
+    expect(mockDispatch).toHaveBeenCalledWith(postalCodeAction.setPostalCode({ some: 'response' }));
+    expect(result.current.isPostalCodeFetch).toBe(false);
+  });
+
+  it('should handle other bank account validation', () => {
+    const { result, props } = setup();
+    const event = {
+      target: { value: '12345', validity: { valid: true } },
+    };
+
+    act(() => {
+      result.current.changeHandler('other_bank_account_bt', event);
+    });
+
+    expect(result.current.error).toBe('');
+    expect(props.handleCallback).toHaveBeenCalledWith(props.data, '12345');
+  });
+
+  it('should handle invalid account number and show error', () => {
+    const { result, props } = setup();
+    const event = {
+      target: { value: '1234', validity: { valid: true } },
+    };
+
+    act(() => {
+      result.current.changeHandler('bank_account_number', event);
+    });
+
+    expect(result.current.error).toBe('');
+    expect(props.handleCallback).toHaveBeenCalledWith(props.data, '');
+    expect(result.current.showAccountNumError).toHaveBeenCalled();
+  });
+});
