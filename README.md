@@ -561,7 +561,157 @@ describe('changeHandler function', () => {
 
     expect(mockProps.handleCallback).toHaveBeenCalledWith(
       mockProps.data,
+
+
+
+      
       ''
     );
+  });
+});
+
+
+import React from 'react';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { Provider } from 'react-redux';
+import configureStore from 'redux-mock-store';
+import thunk from 'redux-thunk';
+import Number from './number';
+import { postalCodeValidation } from './number.utils';
+import { postalCodeAction } from '../../../utils/store/postal-code';
+import '@testing-library/jest-dom/extend-expect';
+
+const middlewares = [thunk];
+const mockStore = configureStore(middlewares);
+
+jest.mock('./number.utils', () => ({
+  postalCodeValidation: jest.fn(),
+}));
+
+jest.mock('../../../utils/store/postal-code', () => ({
+  postalCodeAction: {
+    setPostalCode: jest.fn(),
+  },
+}));
+
+const initialState = {
+  stages: {
+    stages: [
+      {
+        stageInfo: {
+          products: [{ product_type: '280' }],
+          application: { channel_reference: '12345' },
+          applicants: {
+            other_bank_account_bt_a_1: '',
+            reenter_other_bank_account_bt_a_1: '',
+          },
+        },
+        stageId: 'ld-1',
+      },
+    ],
+    journeyType: 'ETC',
+    userInput: {
+      applicants: {},
+    },
+    updatedStageInputs: [],
+  },
+  fielderror: {
+    error: null,
+  },
+};
+
+const mockProps = {
+  data: {
+    logical_field_name: 'postal_code',
+    rwb_label_name: 'Postal Code',
+    type: 'text',
+    mandatory: 'Yes',
+    regex: '\\d{5}',
+    min_length: 5,
+    length: 5,
+    editable: true,
+  },
+  handleCallback: jest.fn(),
+  handleFieldDispatch: jest.fn(),
+};
+
+const renderComponent = (state = initialState) => {
+  const store = mockStore(state);
+  render(
+    <Provider store={store}>
+      <Number {...mockProps} />
+    </Provider>
+  );
+};
+
+describe('Number Component changeHandler function', () => {
+  it('should set error for empty mandatory field', () => {
+    renderComponent();
+    const input = screen.getByLabelText(/Postal Code/i);
+    
+    fireEvent.change(input, { target: { value: '', validity: { valid: false } } });
+    
+    expect(mockProps.handleCallback).toHaveBeenCalledWith(mockProps.data, '');
+    expect(screen.getByText(/Postal Code is required/)).toBeInTheDocument();
+  });
+
+  it('should set error for invalid regex pattern', () => {
+    renderComponent();
+    const input = screen.getByLabelText(/Postal Code/i);
+    
+    fireEvent.change(input, { target: { value: 'abc', validity: { valid: false } } });
+    
+    expect(mockProps.handleCallback).toHaveBeenCalledWith(mockProps.data, 'abc');
+    expect(screen.getByText(/Postal Code format is incorrect/)).toBeInTheDocument();
+  });
+
+  it('should set error for value less than min_length', () => {
+    renderComponent();
+    const input = screen.getByLabelText(/Postal Code/i);
+    
+    fireEvent.change(input, { target: { value: '1234', validity: { valid: false } } });
+    
+    expect(mockProps.handleCallback).toHaveBeenCalledWith(mockProps.data, '1234');
+    expect(screen.getByText(/Postal Code must be at least 5 digits/)).toBeInTheDocument();
+  });
+
+  it('should handle valid postal code input and dispatch postalCodeValidation', async () => {
+    renderComponent();
+    const input = screen.getByLabelText(/Postal Code/i);
+    
+    fireEvent.change(input, { target: { value: '12345', validity: { valid: true } } });
+    
+    expect(postalCodeValidation).toHaveBeenCalledWith('12345', '12345', initialState.stages.stages[0].stageInfo.applicants);
+    await screen.findByText(/Postal Code is correct/);
+    expect(postalCodeAction.setPostalCode).toHaveBeenCalled();
+  });
+
+  it('should handle other bank account fields and validate input', () => {
+    renderComponent();
+    const input = screen.getByLabelText(/Postal Code/i);
+    
+    fireEvent.change(input, { target: { value: 'other_bank_account_bt', validity: { valid: true } } });
+    
+    expect(mockProps.handleCallback).toHaveBeenCalledWith(mockProps.data, 'other_bank_account_bt');
+    expect(screen.getByText(/Other bank account field is valid/)).toBeInTheDocument();
+  });
+
+  it('should dispatch isFieldUpdate for other conditions', () => {
+    renderComponent();
+    const input = screen.getByLabelText(/Postal Code/i);
+    
+    fireEvent.change(input, { target: { value: '12345', validity: { valid: true } } });
+    
+    expect(screen.getByText(/Field updated successfully/)).toBeInTheDocument();
+  });
+
+  it('should show account number error for invalid account number', () => {
+    renderComponent();
+    const input = screen.getByLabelText(/Postal Code/i);
+    
+    fireEvent.change(input, { target: { value: 'invalid_account', validity: { valid: true } } });
+    
+    expect(mockProps.handleCallback).toHaveBeenCalledWith(mockProps.data, '');
+    expect(screen.getByText(/Invalid account number/)).toBeInTheDocument();
   });
 });
