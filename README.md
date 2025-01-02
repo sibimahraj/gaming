@@ -540,3 +540,145 @@ describe('changeHandler function', () => {
   });
 });
 
+import { render, screen, fireEvent } from "@testing-library/react";
+import { Provider } from "react-redux";
+import configureStore from "redux-mock-store";
+import thunk from "redux-thunk";
+import React from "react";
+import Number from "./number";
+import * as utils from "./number.utils"; // Mock this for postalCodeValidation
+
+const middlewares = [thunk];
+const mockStore = configureStore(middlewares);
+
+jest.mock("./number.utils", () => ({
+  postalCodeValidation: jest.fn(),
+}));
+
+jest.mock("../../../utils/store/postal-code", () => ({
+  postalCodeAction: {
+    setPostalCode: jest.fn(),
+  },
+}));
+
+const mockProps = {
+  data: {
+    logical_field_name: "postal_code",
+    rwb_label_name: "Postal Code",
+    type: "text",
+    mandatory: "Yes",
+    regex: "\\d{5}",
+    min_length: 5,
+    length: 5,
+    editable: true,
+  },
+  handleCallback: jest.fn(),
+  handleFieldDispatch: jest.fn(),
+};
+
+const renderComponent = (state: any) => {
+  const store = mockStore(state);
+  render(
+    <Provider store={store}>
+      <Number {...mockProps} />
+    </Provider>
+  );
+};
+
+describe("changeHandler Function", () => {
+  const initialState = {
+    stages: {
+      stages: [
+        {
+          stageInfo: {
+            products: [{ product_type: "280" }],
+            application: { channel_reference: "12345" },
+            applicants: {},
+          },
+          stageId: "ld-1",
+        },
+      ],
+      journeyType: "ETC",
+      userInput: {
+        applicants: {},
+      },
+      updatedStageInputs: [],
+    },
+  };
+
+  it("should display an error if input is invalid and mandatory", () => {
+    renderComponent(initialState);
+    const input = screen.getByLabelText(/postal code/i); // Ensure this matches the input's label
+    fireEvent.change(input, { target: { value: "" } });
+
+    expect(mockProps.handleCallback).toHaveBeenCalledWith(mockProps.data, "");
+    expect(screen.getByText(/Postal Code is required/)).toBeInTheDocument();
+  });
+
+  it("should display a regex validation error for invalid input", () => {
+    renderComponent(initialState);
+    const input = screen.getByLabelText(/postal code/i);
+    fireEvent.change(input, { target: { value: "abc" } });
+
+    expect(mockProps.handleCallback).toHaveBeenCalledWith(mockProps.data, "abc");
+    expect(screen.getByText(/Postal Code must match the pattern/)).toBeInTheDocument();
+  });
+
+  it("should validate minimum length and display an error", () => {
+    renderComponent(initialState);
+    const input = screen.getByLabelText(/postal code/i);
+    fireEvent.change(input, { target: { value: "12" } });
+
+    expect(mockProps.handleCallback).toHaveBeenCalledWith(mockProps.data, "12");
+    expect(screen.getByText(/Postal Code must be at least 5 digits/)).toBeInTheDocument();
+  });
+
+  it("should handle postal code validation when valid input is provided", async () => {
+    renderComponent(initialState);
+    const input = screen.getByLabelText(/postal code/i);
+    fireEvent.change(input, { target: { value: "12345" } });
+
+    expect(mockProps.handleCallback).toHaveBeenCalledWith(mockProps.data, "12345");
+    expect(utils.postalCodeValidation).toHaveBeenCalledWith(
+      "12345",
+      "12345",
+      {}
+    );
+  });
+
+  it("should call handleCallback for other valid fields", () => {
+    renderComponent(initialState);
+    const input = screen.getByLabelText(/postal code/i);
+    fireEvent.change(input, { target: { value: "54321" } });
+
+    expect(mockProps.handleCallback).toHaveBeenCalledWith(mockProps.data, "54321");
+    expect(screen.queryByText(/error/i)).not.toBeInTheDocument();
+  });
+
+  it("should handle other bank account validation logic", () => {
+    renderComponent({
+      ...initialState,
+      stages: {
+        ...initialState.stages,
+        stages: [
+          {
+            ...initialState.stages.stages[0],
+            stageId: "ld-1",
+            stageInfo: {
+              ...initialState.stages.stages[0].stageInfo,
+              applicants: {
+                other_bank_account_bt_a_1: "",
+                reenter_other_bank_account_bt_a_1: "",
+              },
+            },
+          },
+        ],
+      },
+    });
+    const input = screen.getByLabelText(/other bank account/i); // Adjust the label as per the actual input field
+    fireEvent.change(input, { target: { value: "54321" } });
+
+    expect(mockProps.handleCallback).toHaveBeenCalledWith(mockProps.data, "54321");
+  });
+});
+
