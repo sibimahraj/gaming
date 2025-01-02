@@ -1,2173 +1,335 @@
-export const stageFields = (
-  stageSelector: Array<StageDetails>,
-  stageId: string,
-  myinfoMissingFields?: any,
-  other?: string | undefined
-)
-
-  dispatch(
-              stagesAction.getStage({
-                  id: "bd-2",
-                  formConfig: response.data,
-             }));
-
-export default ThankYouSurvey;
-
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
-
-import React from "react";
-import { shallow } from "enzyme";
-import { useSelector } from "react-redux";
-import ThankYouSurvey from "./thank-you";
-import thankyouData from "../../../assets/_json/thankyou.json";
-import * as changeUtils from "../../../utils/common/change.utils";
-
-jest.mock("react-redux", () => ({
-  useSelector: jest.fn(),
-}));
-
-jest.mock("../../../utils/common/change.utils", () => ({
-  getUrl: {
-    getChannelRefNo: jest.fn(),
-  },
-}));
-
-describe("ThankYouSurvey Component", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it("should render ThankYouSurvey component with the correct survey link", () => {
-    // Mock `useSelector` to return stageSelector
-    (useSelector as jest.Mock).mockReturnValue([
-      {
-        stageInfo: {
-          products: [
-            {
-              product_category: "CC",
-            },
-          ],
-        },
-      },
-    ]);
-
-    // Mock `getUrl.getChannelRefNo`
-    (changeUtils.getUrl.getChannelRefNo as jest.Mock).mockReturnValue({
-      applicationRefNo: "12345",
-    });
-
-    // Render the component
-    const wrapper = shallow(<ThankYouSurvey />);
-
-    // Verify the rendered content
-    expect(wrapper.find(".thankyou__feedback").exists()).toBe(true);
-    expect(wrapper.text()).toContain(thankyouData.Survey.content_1);
-    expect(wrapper.text()).toContain(thankyouData.Survey.content_2);
-    expect(wrapper.text()).toContain(thankyouData.Survey.content_3);
-
-    // Verify the survey link is constructed correctly
-    const expectedLink =
-      thankyouData.Survey.link +
-      "&p=CC&m=sg&c=12345";
-    const surveyLink = wrapper.find("a").prop("href");
-
-    expect(surveyLink).toBe(expectedLink);
-    expect(wrapper.find("a").prop("target")).toBe("_blank");
-    expect(wrapper.find("a").prop("rel")).toBe("feedback noreferrer");
-  });
-});
-
-
-import "./thank-you.scss";
-import { KeyWithAnyModel } from "../../../utils/model/common-model";
-import ThankYouTimeline from "./thankyou-timeline";
-import ThankYouBanner from "./thankyou-banner";
-import ThankYouSurvey from "./thankyou-survey"
-const ThankYouCC = (props: KeyWithAnyModel) => {
-  const applicationDetails = props.applicationDetails;
-  const thankyou = props.thankyou;
-
-  const getTimelineData = () => {
-    
-    if (!applicationDetails.isStp) {
-      return thankyou[applicationDetails.thankyouProp].CCPL.timeLine;
-    }
-    return thankyou.CCSTP;
-  };
-  return (
-    <>
-      <ThankYouBanner
-        banner_header={
-          !applicationDetails.isStp
-            ? thankyou[applicationDetails.thankyouProp].CCPL.banner_header
-            : thankyou.STPCCBanner.banner_header
-        }
-        banner_content={true}
-        // banner_body_1={
-        //   !applicationDetails.isStp
-        //     ? thankyou[applicationDetails.thankyouProp].CCPL.banner_body_1
-        //     : ""
-        // }
-        productName={" "}
-        banner_body_2={
-          !applicationDetails.isStp
-            ? thankyou[applicationDetails.thankyouProp].CCPL.banner_body_2
-            : ""
-        }
-        resumeUrl={
-          !applicationDetails.isStp
-            ? thankyou[applicationDetails.thankyouProp].CCPL.resumeUrl
-            : ""
-        }
-      />
-      <div className="thankyou__body__outer">
-        <div className="thankyou__body">
-          {!applicationDetails.isStp && (
-            <>
-              <div className="thankyou__title">
-                <label>
-                  {thankyou[applicationDetails.thankyouProp].CCPL.title}
-                </label>
-              </div>
-              <div className="thankyou__content">
-                <label>
-                  {thankyou[applicationDetails.thankyouProp].CCPL.content}
-                </label>
-              </div>
-            </>
-          )}
-          {applicationDetails.isStp && (
-            <div className="thankyou__title">
-              <div>
-                {thankyou.STPCCBanner.banner_body_1}
-                {applicationDetails.productName}
-                {thankyou.STPCCBanner.banner_body_2}
-              </div>
-              <div>{applicationDetails.productName}</div>
-              <div>{applicationDetails.cardNumber}</div>
-            </div>
-          )}
-          <ThankYouTimeline
-            title={thankyou[applicationDetails.thankyouText].timeLine}
-            data={getTimelineData()}
-            checkCompletedStatus={true}
-            handleLink={props.showOTPPopup}
-          />
-          {applicationDetails.isStp && (
-            <div>
-              <div>
-                {thankyou[applicationDetails.thankyouText].timeline_header}
-              </div>
-              <div>
-                {thankyou[applicationDetails.thankyouText].timeline_desc}
-              </div>
-            </div>
-          )}
-          {!applicationDetails.isStp && (
-            <div>
-              <div className="thankyou__note__content">
-                <label>{thankyou.CCPL.note_title}</label>
-              </div>
-              <div className="thankyou__note__content">
-                <div>{thankyou.CCPL.note_content_1}</div>
-                <div>{thankyou.CCPL.note_content_2}</div>
-              </div>
-              <div className="thankyou__note__content">
-                <div>{thankyou.CCPL.note_content_3}</div>
-                <div>
-                  <a
-                    target="_blank"
-                    rel="feedback noreferrer"
-                    href={thankyou.CCPL.note_link}
-                  >
-                    {thankyou.CCPL.note_content_4}
-                  </a>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="body__app-details">
-            <label>{thankyou.CCPL.refId_lbl}</label>
-            {props.applicationReferenceNo!}
-          </div>
-          <div className="body__refno">
-            {applicationDetails.isStp ? (
-              <>
-                <button
-                  onClick={(e) => props.showContinuePopup(e)}
-                  className="thankyou__continue"
-                >
-                  {thankyou[applicationDetails.thankyouText].continueButton}
-                </button>
-              </>
-            ) : (
-              <button
-                onClick={(e) => props.submitForm(e)}
-                className="thankyou__continue"
-              >
-                {thankyou[applicationDetails.thankyouText].doneButton}
-              </button>
-            )}
-          </div>
-          <ThankYouSurvey/>
-        </div>
-      </div>   
-    </>
-  );
-};
-
-export default ThankYouCC;
-
-import { render, screen, fireEvent } from '@testing-library/react';
-import ThankYouCC from './ThankYouCC';
-
-const mockProps = {
-  applicationDetails: {
-    isStp: false,
-    thankyouProp: 'mockThankYouProp',
-    thankyouText: 'mockThankYouText',
-    productName: 'Credit Card',
-    cardNumber: '1234-5678-9012-3456',
-  },
-  thankyou: {
-    mockThankYouProp: {
-      CCPL: {
-        timeLine: 'Timeline Data',
-        banner_header: 'Mock Header',
-        banner_body_2: 'Mock Body 2',
-        resumeUrl: '/resume/url',
-        title: 'Mock Title',
-        content: 'Mock Content',
-        note_title: 'Mock Note Title',
-        note_content_1: 'Mock Note Content 1',
-        note_content_2: 'Mock Note Content 2',
-        note_content_3: 'Mock Note Content 3',
-        note_content_4: 'Mock Note Content 4',
-        note_link: '/mock-note-link',
-        refId_lbl: 'Reference ID',
-        doneButton: 'Done',
-      },
-    },
-    CCSTP: 'STP Timeline Data',
-    STPCCBanner: {
-      banner_header: 'STP Header',
-      banner_body_1: 'STP Body 1',
-      banner_body_2: 'STP Body 2',
-    },
-    mockThankYouText: {
-      timeLine: 'STP Timeline',
-      timeline_header: 'STP Timeline Header',
-      timeline_desc: 'STP Timeline Description',
-      continueButton: 'Continue',
-    },
-  },
-  applicationReferenceNo: 'REF12345',
-  showOTPPopup: jest.fn(),
-  submitForm: jest.fn(),
-  showContinuePopup: jest.fn(),
-};
-
-jest.mock('./thankyou-timeline', () => () => <div data-testid="thankyou-timeline" />);
-jest.mock('./thankyou-banner', () => () => <div data-testid="thankyou-banner" />);
-jest.mock('./thankyou-survey', () => () => <div data-testid="thankyou-survey" />);
-
-describe('ThankYouCC Component', () => {
-  test('renders correctly for non-STP flow', () => {
-    render(<ThankYouCC {...mockProps} />);
-
-    // Check ThankYouBanner
-    expect(screen.getByTestId('thankyou-banner')).toBeInTheDocument();
-
-    // Check title and content
-    expect(screen.getByText('Mock Title')).toBeInTheDocument();
-    expect(screen.getByText('Mock Content')).toBeInTheDocument();
-
-    // Check timeline
-    expect(screen.getByTestId('thankyou-timeline')).toBeInTheDocument();
-
-    // Check notes
-    expect(screen.getByText('Mock Note Title')).toBeInTheDocument();
-    expect(screen.getByText('Mock Note Content 1')).toBeInTheDocument();
-    expect(screen.getByText('Mock Note Content 4')).toBeInTheDocument();
-
-    // Check reference number
-    expect(screen.getByText('REF12345')).toBeInTheDocument();
-
-    // Check Done button
-    const doneButton = screen.getByText('Done');
-    expect(doneButton).toBeInTheDocument();
-    fireEvent.click(doneButton);
-    expect(mockProps.submitForm).toHaveBeenCalled();
-  });
-
-  test('renders correctly for STP flow', () => {
-    const stpProps = {
-      ...mockProps,
-      applicationDetails: { ...mockProps.applicationDetails, isStp: true },
-    };
-
-    render(<ThankYouCC {...stpProps} />);
-
-    // Check ThankYouBanner
-    expect(screen.getByTestId('thankyou-banner')).toBeInTheDocument();
-
-    // Check STP timeline details
-    expect(screen.getByText('STP Timeline Header')).toBeInTheDocument();
-    expect(screen.getByText('STP Timeline Description')).toBeInTheDocument();
-
-    // Check STP banner details
-    expect(screen.getByText('STP Body 1')).toBeInTheDocument();
-    expect(screen.getByText('STP Body 2')).toBeInTheDocument();
-
-    // Check Continue button
-    const continueButton = screen.getByText('Continue');
-    expect(continueButton).toBeInTheDocument();
-    fireEvent.click(continueButton);
-    expect(stpProps.showContinuePopup).toHaveBeenCalled();
-  });
-
-  test('calls getTimelineData correctly for non-STP', () => {
-    render(<ThankYouCC {...mockProps} />);
-
-    // Assert that timeline data from CCPL is used
-    expect(screen.getByTestId('thankyou-timeline')).toBeInTheDocument();
-  });
-
-  test('calls getTimelineData correctly for STP', () => {
-    const stpProps = {
-      ...mockProps,
-      applicationDetails: { ...mockProps.applicationDetails, isStp: true },
-    };
-
-    render(<ThankYouCC {...stpProps} />);
-
-    // Assert that timeline data from CCSTP is used
-    expect(screen.getByTestId('thankyou-timeline')).toBeInTheDocument();
-  });
-});
-
-ThankYouCC Component › renders correctly for STP flow
-
-    TypeError: Cannot read properties of undefined (reading 'refId_lbl')
-
-      111 |
-      112 |           <div className="body__app-details">
-    > 113 |             <label>{thankyou.CCPL.refId_lbl}</label>
-          |                                   ^
-      114 |             {props.applicationReferenceNo!}
-      115 |           </div>
-      116 |           <div className="body__refno">
-
-      at refId_lbl (src/modules/dashboard/thank-you/thankyou-cc.tsx:113:35)
-      at renderWithHooks (node_modules/react-dom/cjs/react-dom.development.js:16305:18)
-      at mountIndeterminateComponent (node_modules/react-dom/cjs/react-dom.development.js:20074:13)
-      at beginWork (node_modules/react-dom/cjs/react-dom.development.js:21587:16)
-      at beginWork$1 (node_modules/react-dom/cjs/react-dom.development.js:27426:14)
-      at performUnitOfWork (node_modules/react-dom/cjs/react-dom.development.js:26560:12)
-      at workLoopSync (node_modules/react-dom/cjs/react-dom.development.js:26466:5)
-      at renderRootSync (node_modules/react-dom/cjs/react-dom.development.js:26434:7)
-      at recoverFromConcurrentError (node_modules/react-dom/cjs/react-dom.development.js:25850:20)
-      at performConcurrentWorkOnRoot (node_modules/react-dom/cjs/react-dom.development.js:25750:22)
-      at flushActQueue (node_modules/react/cjs/react.development.js:2667:24)
-      at act (node_modules/react/cjs/react.development.js:2582:11)
-      at node_modules/@testing-library/react/dist/act-compat.js:46:25
-      at renderRoot (node_modules/@testing-library/react/dist/pure.js:180:26)
-      at render (node_modules/@testing-library/react/dist/pure.js:266:10)
-      at Object.<anonymous> (src/modules/dashboard/thank-you/thankyou-cc.test.tsx:89:11)
-
-  ● ThankYouCC Component › calls getTimelineData correctly for non-STP
-
-    TypeError: Cannot read properties of undefined (reading 'note_title')
-
-      89 |             <div>
-      90 |               <div className="thankyou__note__content">
-    > 91 |                 <label>{thankyou.CCPL.note_title}</label>
-         |                                       ^
-      92 |               </div>
-      93 |               <div className="thankyou__note__content">
-
-import "./thank-you.scss";
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { KeyWithAnyModel, StoreModel } from "../../../utils/model/common-model";
-import thankyouData from "../../../assets/_json/thankyou.json";
-import { useSelector} from "react-redux";
-import { getUrl } from "../../../utils/common/change.utils";
-
-
-const ThankYouSurvey = ( ) => {
-const thankyou: KeyWithAnyModel = thankyouData;
-const stageSelector = useSelector((state: StoreModel) => state.stages.stages);
-const applicationReferenceNo = getUrl.getChannelRefNo().applicationRefNo;
-const survey_link = "&p="+stageSelector[0].stageInfo.products[0].product_category+"&m=sg"+"&c="+applicationReferenceNo;
-
-  return (
-    <div className="thankyou__feedback">
-    {thankyou.Survey.content_1}
-    <a target="_blank" 
-    rel="feedback noreferrer" 
-    href={thankyou.Survey.link+survey_link} >
-    {thankyou.Survey.content_2}</a>
-    {thankyou.Survey.content_3}
-  </div>
-  );
-};
-
-export default ThankYouSurvey;
-
-import { render, screen } from '@testing-library/react';
-import { useSelector } from 'react-redux';
-import ThankYouSurvey from './ThankYouSurvey';
-import thankyouData from '../../../assets/_json/thankyou.json';
-import { getUrl } from '../../../utils/common/change.utils';
-
-jest.mock('react-redux', () => ({
-  useSelector: jest.fn(),
-}));
-
-jest.mock('../../../utils/common/change.utils', () => ({
-  getUrl: {
-    getChannelRefNo: jest.fn(),
-  },
-}));
-
-describe('ThankYouSurvey Component', () => {
-  beforeEach(() => {
-    // Mock the Redux selector
-    (useSelector as jest.Mock).mockReturnValue([
-      {
-        stageInfo: {
-          products: [
-            {
-              product_category: 'mockCategory',
-            },
-          ],
-        },
-      },
-    ]);
-
-    // Mock the getUrl function
-    (getUrl.getChannelRefNo as jest.Mock).mockReturnValue({
-      applicationRefNo: 'mockRefNo',
-    });
-  });
-
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
-  test('renders survey content correctly', () => {
-    render(<ThankYouSurvey />);
-
-    // Verify thankyouData content
-    expect(screen.getByText(thankyouData.Survey.content_1)).toBeInTheDocument();
-    expect(screen.getByText(thankyouData.Survey.content_2)).toBeInTheDocument();
-    expect(screen.getByText(thankyouData.Survey.content_3)).toBeInTheDocument();
-  });
-
-  test('constructs survey link correctly', () => {
-    render(<ThankYouSurvey />);
-
-    // Verify survey link
-    const surveyLink = screen.getByRole('link', {
-      name: thankyouData.Survey.content_2,
-    });
-
-    const expectedLink = `${thankyouData.Survey.link}&p=mockCategory&m=sg&c=mockRefNo`;
-    expect(surveyLink).toHaveAttribute('href', expectedLink);
-  });
-
-  test('renders a survey link with target and rel attributes', () => {
-    render(<ThankYouSurvey />);
-
-    const surveyLink = screen.getByRole('link', {
-      name: thankyouData.Survey.content_2,
-    });
-
-    // Check attributes
-    expect(surveyLink).toHaveAttribute('target', '_blank');
-    expect(surveyLink).toHaveAttribute('rel', 'feedback noreferrer');
-  });
-});
-
-
-import { useEffect, useState } from "react";
-import "./thank-you.scss";
-import { KeyWithAnyModel, StoreModel } from "../../../utils/model/common-model";
-import thankyouData from "../../../assets/_json/thankyou.json";
-import { useSelector, useDispatch } from "react-redux";
-import { getUrl } from "../../../utils/common/change.utils";
-import trackEvents from "../../../services/track-events";
 import {
-  redirectingToIbanking,
-  activateDigitalCard,
-} from "../../../services/common-service";
-import Model from "../../../shared/components/model/model";
-import PopupModel from "../../../shared/components/popup-model/popup-model";
+  fieldError,
+  getUrl,
+  isFieldUpdate,
+} from "../../../utils/common/change.utils";
+import errorMsg from "../../../assets/_json/error.json";
+import { lastAction } from "../../../utils/store/last-accessed-slice";
+import { postalCodeValidation } from "./number.utils";
+import { postalCodeAction } from "../../../utils/store/postal-code";
+import "./number.scss";
 
-import ThankYouCC from "./thankyou-cc";
-// import ThankYouPL from "./thankyou-pl";
-import CCWithoutActivation from "./cc-without-activation";
-import gaTrackEvents from "../../../services/ga-track-events";
-import CCActivationSucess from "./cc-activation-success";
-import ThankyouError from "./thankyou-error";
-import { useNavigate } from "react-router-dom";
-import ThankYouUpload from "./thankyou-upload";
-import { store } from "../../../utils/store/store";
-
-const ThankYou = () => {
-  const navigate = useNavigate();
-  const dispatch = useDispatch();
+const Number = (props: KeyWithAnyModel) => {
+  const [error, setError] = useState("");  
   const stageSelector = useSelector((state: StoreModel) => state.stages.stages);
-  // const applicationJourney = useSelector(
-  //   (state: StoreModel) => state.stages.journeyType
-  // );
-  // const otpSuccessSelector = useSelector(
-  //   (state: StoreModel) => state.stages.otpSuccess
-  // );
-  const thankyou: KeyWithAnyModel = thankyouData;
-  // const [isFunding, setIsFunding] = useState(false);
-  const applicationReferenceNo = stageSelector[0].stageInfo.application.application_reference;
-  const [applicationDetails, setApplicationDetails] = useState({
-    productCategory: "",
-    productName: "",
-    acct_details: [],
-    account_number: "",
-    thankyouProp: "NSTP",
-    accountNum: "",
-   thankyouText: "Common",
-    thankyouFeedback: "Feedback",
-    feedbackUrl: "",
-    isStp: false,
-    loanTenureMonths: "",
-    approvedLoan: 0,
-    productType: "",
-    feeAmount: "",
-    card_no: "",
-    cardNumber: "",
-    cardName: "",
-    productSequenceNo: "",
-  });
-  // const [enableActivation, setEnableActivation] = useState<boolean>(false);
-  // const [showPlatinum, setShowPlatinum] = useState<boolean>(false);
-  // const [isCampaignBenefits, setIsCampaignBenefits] = useState<boolean>(false);
-  const [
-    showContinueWithoutActivationMsg,
-    setShowContinueWithoutActivationMsg,
-  ] = useState<boolean>(false);
-  const [continueWithoutActivationUI, setContinueWithoutActivationUI] =
-    useState(false);
-  const [cardActivationSuccessUI, setCardActivationSuccessUI] = useState(false);
-  const [showErrorUI, setShowerrorUI] = useState(false);
-
-  useEffect(() => {
-    setApplicationDetails((prevValue) => {
+  const userInputSelector = useSelector(
+    (state: StoreModel) => state.stages.userInput
+  );
+  const updatedStageInputsSelector = useSelector(
+    (state: StoreModel) => state.stages.updatedStageInputs
+  );
+  const fieldErrorSelector = useSelector(
+    (state: StoreModel) => state.fielderror.error
+  );
+  const applicantsSelector = useSelector(
+    (state: StoreModel) => state.stages.userInput.applicants
+  );
+  const dispatch = useDispatch();
+  const [defaultValue, setDefaultValue] = useState("");
+  const [valueUpdate, setValueUpdate] = useState("");
+  const [isPostalCodeFetch, setIsPostalCodeFetch] = useState(false);
+  const [isPostalValue , setPostalValue] = useState("");
+  const applicationJourney = useSelector((state: StoreModel) => state.stages.journeyType);
+  const productCode = stageSelector[0].stageInfo.products[0].product_type;
+  const existingCashone =  (productCode === '280' && applicationJourney === 'ETC') ? true : false;
+  let otherBankfields = (applicantsSelector.credit_into_a_1 === 'Other Bank Account' && (applicantsSelector.other_bank_account_bt_a_1 === '' && applicantsSelector.reenter_other_bank_account_bt_a_1 === ''));
+  const changeHandler = (
+    fieldName: string,
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const inputValue = event.target.value;
+    setDefaultValue(inputValue);
+    if (!event.target.validity.valid) {
+      props.handleCallback(props.data, inputValue);        
+      if ((props.data.mandatory === "Yes" || props.data.mandatory ==="Conditional") && inputValue.length < 1) {
+        setError(`${errorMsg.emity} ${props.data.rwb_label_name}`);
+      } else if (props.data.regex && !(`${inputValue}`.match(props.data.regex))) {
+        setError(`${errorMsg.patterns} ${props.data.rwb_label_name}`)
+      } else if (props.data.min_length && `${inputValue}`.length < props.data.min_length) {
+        setError(`${errorMsg.bankAccountMinLength} ${props.data.min_length} digits`)
+      } else {
+        setError((`${errorMsg.patterns} ${props.data.rwb_label_name}`));
+      }
+    }else{
+      setError("");
+      const fieldValue = event.target.value;
+      setValueUpdate(fieldValue)
+      let checkOtherBank =(existingCashone && (fieldName === 'other_bank_account_bt' || fieldName ==='reenter_other_bank_account_bt')
+       && stageSelector[0].stageId === "ld-1") ? false : true;
       if (
-        stageSelector &&
-        stageSelector[0].stageInfo && stageSelector[0].stageInfo.products &&
-        stageSelector[0].stageInfo.products.length >= 1
+        fieldValue &&
+        isPostalValue !== fieldValue && 
+        fieldName === "postal_code" &&
+        event.target.validity.valid
       ) {
-        prevValue.productCategory =
-          stageSelector[0].stageInfo.products[0].product_category;
-        prevValue.productName = stageSelector[0].stageInfo.products[0].name;
-        prevValue.productSequenceNo =
-          stageSelector[0].stageInfo.products[0].product_sequence_number;
-        prevValue.productType =
-          stageSelector[0].stageInfo.products[0].product_type;
-        if (
-          stageSelector[0].stageInfo.products[0].acct_details &&
-          stageSelector[0].stageInfo.products[0].acct_details.length >= 1
-        ) {
-          prevValue.acct_details =
-            stageSelector[0].stageInfo.products[0].acct_details;
-          prevValue.account_number =
-            stageSelector[0].stageInfo.products[0].acct_details[0].account_number;
-          prevValue.card_no =
-            stageSelector[0].stageInfo.products[0].acct_details[0].card_no;
-        }
+        setPostalValue(fieldValue)
+        const channelrefNumber =
+          stageSelector[0].stageInfo.application["channel_reference"];
+        setIsPostalCodeFetch(true);
+        dispatch(
+          postalCodeValidation(
+            fieldValue,
+            channelrefNumber,
+            stageSelector[0].stageInfo.applicants
+          )
+        ).then((response: any) => {
+          dispatch(postalCodeAction.setPostalCode(response));
+          setIsPostalCodeFetch(false);
+        });
       }
-      prevValue.thankyouProp = "NSTP";
-      if (
-        prevValue.acct_details &&
-        prevValue.acct_details[0] &&
-        prevValue.account_number
-      ) {
-        prevValue.thankyouProp = "STP";
-        prevValue.accountNum = prevValue.account_number;
+      else if (checkOtherBank && stageSelector[0].stageId !== "ad-2") {
+        props.handleCallback(props.data, event.target.value);     
+      } else {
+        dispatch(isFieldUpdate(props, event.target.value, fieldName));
+        if (accountNumValidation(inputValue,props)) {     
+          props.handleCallback(props.data, inputValue);
+        } else {
+          props.handleCallback(props.data, "");            
+          showAccountNumError();           
+        }           
       }
-      if (
-        prevValue.acct_details &&
-        prevValue.acct_details[0] &&
-        prevValue.card_no
-      ) {
-        prevValue.thankyouProp = "STP";
-        prevValue.cardNumber = prevValue.card_no;
-      }
-      prevValue.isStp = prevValue.thankyouProp === "STP" ? true : false;
-      prevValue.feedbackUrl =
-        thankyou[prevValue.thankyouFeedback]["url_prefix"] +
-        thankyou[prevValue.thankyouFeedback]["casa"] +
-        thankyou[prevValue.thankyouFeedback]["url_suffix"] +
-        applicationReferenceNo!;
-
-      // prevValue = setSTPData(prevValue);
-      if (prevValue.isStp) {
-        if (prevValue.productCategory === "CC") {
-          if (stageSelector[0].stageInfo.applicants) {
-            if (stageSelector[0].stageInfo.applicants.embossed_name_a_1) {
-              prevValue.cardName =
-                stageSelector[0].stageInfo.applicants.embossed_name_a_1.toUpperCase();
-            }
-            if (prevValue.card_no) {
-              prevValue.cardNumber = prevValue.card_no;
-            }
-          }
-         } 
-        
-      }
-      return { ...prevValue };
-    });
-    if (stageSelector[0] && stageSelector[0].stageId && getUrl.getParameterByName("auth") !== "upload" && !store.getState().stages.isDocumentUpload) {
-      gaTrackEvents.pageView(stageSelector[0].stageId);
+    } 
+  };
+  const showAccountNumError = () => {
+    if (        
+      props.data.logical_field_name === "scb_account_no" ||
+      props.data.logical_field_name === "other_bank_account_bt"
+    ) {
+      setError(errorMsg.sgBankAccountMismatch);
+    } else if (
+      props.data.logical_field_name === "re_enter_scb_account_no" ||
+      props.data.logical_field_name === "reenter_other_bank_account_bt"
+    ) {
+      setError(errorMsg.sgBankAccountMismatch_RE);
+    } else if (props.data.logical_field_name === "other_bank_credit_card_bt") {
+      setError(errorMsg.sgCreditCardNoMismatch);
+    }else if (props.data.logical_field_name === "reenter_other_bank_credit_card_bt") {
+      setError(errorMsg.sgCreditCardNoMismatch_RE);
+    } else {
+      setError(`${errorMsg.emity} ${props.data.rwb_label_name}`);
     }
-    if(getUrl.getParameterByName("auth") !== "upload" && !store.getState().stages.isDocumentUpload){
-    trackEvents.triggerAdobeEvent("formSubmit");
+  }
+  const isValidInput = (inputValue:string, props:KeyWithAnyModel) => {
+    if (props.data.regex && !(`${inputValue}`.match(props.data.regex))) {
+      return false;
+    } else if (props.data.min_length && `${inputValue}`.length < props.data.min_length) {
+      return false;
+    } else {
+      return true;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // useEffect(() => {
-  //   if (otpSuccessSelector) {
-  //     activateCard();
-  //   }
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, [otpSuccessSelector]);
-  // const setSTPData = (prevValue: any) => {
-  //   if (prevValue.isStp && prevValue.productCategory) {
-  //     if (prevValue.productCategory === "CC") {
-  //       prevValue.feedbackUrl =
-  //         thankyou[prevValue.thankyouFeedback]["url_prefix"] +
-  //         thankyou[prevValue.thankyouFeedback]["cc"] +
-  //         thankyou[prevValue.thankyouFeedback]["url_suffix"] +
-  //         applicationReferenceNo!;
-  //     } else if (prevValue.productCategory === "PL") {
-  //       prevValue.feedbackUrl =
-  //         thankyou[prevValue.thankyouFeedback]["url_prefix"] +
-  //         thankyou[prevValue.thankyouFeedback]["pl"] +
-  //         thankyou[prevValue.thankyouFeedback]["url_suffix"] +
-  //         applicationReferenceNo!;
-  //     }
-  //   }
-  //   return prevValue;
-  // };
-
-  const submitForm = (event:React.FormEvent<EventTarget>) => {
+  }
+  const accountNumValidation = (inputValue:string, props:KeyWithAnyModel) => {
+    const validFields = ["scb_account_no", "re_enter_scb_account_no", "other_bank_account_bt", "reenter_other_bank_account_bt", "other_bank_credit_card_bt", "reenter_other_bank_credit_card_bt"];
+    if (validFields.indexOf(props.data.logical_field_name) === -1) {
+      return true;
+    }
+    let storeValue: string | null = null;
+    let fieldName: string | null = null;
+    if (props.data.logical_field_name === "scb_account_no") {
+      fieldName = "re_enter_scb_account_no";              
+    } else if (props.data.logical_field_name === "re_enter_scb_account_no") {
+      fieldName = "scb_account_no";
+    } else if (props.data.logical_field_name === "other_bank_account_bt") {
+      fieldName = "reenter_other_bank_account_bt";   
+    } else if (props.data.logical_field_name === "reenter_other_bank_account_bt") {
+      fieldName = "other_bank_account_bt";
+    } else if (props.data.logical_field_name === "other_bank_credit_card_bt") {
+      fieldName = "reenter_other_bank_credit_card_bt";
+    } else if (props.data.logical_field_name === "reenter_other_bank_credit_card_bt") {
+      fieldName = "other_bank_credit_card_bt";      
+    }
+    fieldName = fieldName + "_a_1";
     if (
       stageSelector &&
-      (stageSelector[0].stageInfo.applicants["auth_mode_a_1"] === "IX" || stageSelector[0].stageInfo.applicants["auth_mode_a_1"] === "IM")
-     ) {
-    //   // goToIBanking(event);
-     }
-     else {
-      window.location.href = `${process.env.REACT_APP_HOME_PAGE_URL}`;
-    }
-    event.preventDefault();
-  };
-
-  const continueWithoutActivation = () => {
-    setShowContinueWithoutActivationMsg(false);
-    setContinueWithoutActivationUI(true);
-  };
-  const showContinuePopup = (event: React.FormEvent<EventTarget>) => {
-    setShowContinueWithoutActivationMsg(true);
-    event.preventDefault();
-  };
-  const handlePopupBackButton = () => {
-    setShowContinueWithoutActivationMsg(false);
-    setContinueWithoutActivationUI(false);
-  };
-  const showOTPPopup = () => {
-    navigate("/otp");
-  };
-  // const goToIBanking = (event: React.FormEvent<EventTarget>) => {
-  //   if (getUrl.getParameterByName("source") === "scm") {
-  //     //Ibanking redirection for app
-  //     window.location.href = `${process.env.REACT_APP_IBANKING_SC_MOBILE}`;
-  //   }  else if(getUrl.getUpdatedStage().ccplChannel=== "MBNK") {
-  //     const redirectUrl =  `${process.env.REACT_APP_IBANKING_SC_MOBILE_TRANSFER}`;
-  //     window.location.href = redirectUrl;
-  //   }else {
-  //     redirectingToIbanking();
-  //   }
-  //   event.preventDefault();
-  // };
-  // const activateCard = () => {
-  //   setShowContinueWithoutActivationMsg(false);
-  //   setContinueWithoutActivationUI(false);
-  //   setShowerrorUI(false);
-  //   dispatch(activateDigitalCard(applicationDetails)).then((result: any) => {
-  //     if (result.status && result.status.toUpperCase() === "SUCCESS") {
-  //       setCardActivationSuccessUI(true);
-  //     } else {
-  //       setShowerrorUI(true);
-  //     }
-  //   });
-  // };
-  return (
-    <>
-      {applicationDetails && (
-        <form className="form">
-          <div className="app thankyou">
-            <div className="app__body">
-              <div className="app__right">
-                <div className="thankyou__container">
-                  {!showErrorUI &&
-                    !continueWithoutActivationUI &&
-                    !cardActivationSuccessUI && (
-                      <>
-                      {(getUrl.getParameterByName("auth") === "upload" || store.getState().stages.isDocumentUpload) &&(
-                          <ThankYouUpload
-                          applicationDetails={applicationDetails}
-                          thankyou={thankyou}
-                          applicationReferenceNo={applicationReferenceNo}
-                          submitForm={submitForm}
-                        />
-                        )}
-                       
-                        {applicationDetails.productCategory === "CC" && (
-                          <ThankYouCC
-                            applicationDetails={applicationDetails}
-                            thankyou={thankyou}
-                            applicationReferenceNo={applicationReferenceNo}
-                            submitForm={submitForm}
-                            // activateCard={activateCard}
-                            showContinuePopup={showContinuePopup}
-                            showOTPPopup={showOTPPopup}
-                          />
-                        )}
-                       
-                        {showContinueWithoutActivationMsg && (
-                          <PopupModel displayPopup={true}>
-                            <Model
-                              name="CCThankYou"
-                              handlebuttonClick={handlePopupBackButton}
-                              handleContinueWithoutActivation={
-                                continueWithoutActivation
-                              }
-                            />
-                          </PopupModel>
-                        )}
-                      </>
-                    )}
-                  {applicationDetails.productCategory === "CC" && (
-                    <>
-                      {continueWithoutActivationUI && (
-                        <CCWithoutActivation
-                          applicationDetails={applicationDetails}
-                          thankyou={thankyou}
-                          applicationReferenceNo={applicationReferenceNo}
-                          // goToIBanking={goToIBanking}
-                        />
-                      )}
-                      {cardActivationSuccessUI && (
-                        <CCActivationSucess
-                          applicationDetails={applicationDetails}
-                          thankyou={thankyou}
-                          applicationReferenceNo={applicationReferenceNo}
-                          // goToIBanking={goToIBanking}
-                        />
-                      )}
-                    </>
-                  )}
-                  {showErrorUI && (
-                    <ThankyouError
-                      applicationDetails={applicationDetails}
-                      thankyou={thankyou}
-                      applicationReferenceNo={applicationReferenceNo}
-                      // goToIBanking={goToIBanking}
-                    />
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </form>
-      )}
-    </>
-  );
-};
-
-export default ThankYou;
-
-
-import { render, screen, fireEvent, act } from "@testing-library/react";
-import { Provider } from "react-redux";
-import { BrowserRouter } from "react-router-dom";
-import ThankYou from "./ThankYou";
-import { store } from "../../../utils/store/store";
-import * as gaTrackEvents from "../../../services/ga-track-events";
-import * as trackEvents from "../../../services/track-events";
-import thankyouData from "../../../assets/_json/thankyou.json";
-
-jest.mock("../../../services/ga-track-events", () => ({
-  pageView: jest.fn(),
-}));
-
-jest.mock("../../../services/track-events", () => ({
-  triggerAdobeEvent: jest.fn(),
-}));
-
-const mockStageSelector = [
-  {
-    stageInfo: {
-      application: {
-        application_reference: "mockApplicationRef123",
-      },
-      products: [
-        {
-          product_category: "CC",
-          name: "Credit Card",
-          product_sequence_number: "001",
-          product_type: "Card",
-          acct_details: [
-            {
-              account_number: "123456789",
-              card_no: "987654321",
-            },
-          ],
-        },
-      ],
-      applicants: {
-        auth_mode_a_1: "IX",
-        embossed_name_a_1: "Test User",
-      },
-    },
-    stageId: "mockStageId",
-  },
-];
-
-jest.mock("react-redux", () => ({
-  useSelector: jest.fn((fn) => fn({ stages: { stages: mockStageSelector } })),
-  useDispatch: jest.fn(() => jest.fn()),
-}));
-
-jest.mock("../../../utils/common/change.utils", () => ({
-  getUrl: {
-    getParameterByName: jest.fn((name) => (name === "auth" ? "upload" : null)),
-  },
-}));
-
-jest.mock("../../../shared/components/model/model", () => () => (
-  <div>Mocked Model Component</div>
-));
-
-jest.mock("../../../shared/components/popup-model/popup-model", () => () => (
-  <div>Mocked PopupModel Component</div>
-));
-
-jest.mock("./thankyou-cc", () => () => (
-  <div>Mocked ThankYouCC Component</div>
-));
-
-jest.mock("./thankyou-upload", () => () => (
-  <div>Mocked ThankYouUpload Component</div>
-));
-
-jest.mock("./cc-without-activation", () => () => (
-  <div>Mocked CCWithoutActivation Component</div>
-));
-
-jest.mock("./cc-activation-success", () => () => (
-  <div>Mocked CCActivationSuccess Component</div>
-));
-
-jest.mock("./thankyou-error", () => () => (
-  <div>Mocked ThankYouError Component</div>
-));
-
-describe("ThankYou Component", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  const renderComponent = () =>
-    render(
-      <Provider store={store}>
-        <BrowserRouter>
-          <ThankYou />
-        </BrowserRouter>
-      </Provider>
-    );
-
-  test("renders the ThankYou component correctly", () => {
-    renderComponent();
-    expect(screen.getByText("Mocked ThankYouUpload Component")).toBeInTheDocument();
-  });
-
-  test("renders ThankYouCC component when productCategory is CC", () => {
-    renderComponent();
-    expect(screen.getByText("Mocked ThankYouCC Component")).toBeInTheDocument();
-  });
-
-  test("calls gaTrackEvents.pageView and trackEvents.triggerAdobeEvent", () => {
-    renderComponent();
-    expect(gaTrackEvents.pageView).toHaveBeenCalledWith("mockStageId");
-    expect(trackEvents.triggerAdobeEvent).toHaveBeenCalledWith("formSubmit");
-  });
-
-  test("handles showContinuePopup and displays PopupModel", () => {
-    renderComponent();
-    const continueButton = screen.getByText("Mocked ThankYouCC Component");
-    act(() => {
-      fireEvent.click(continueButton);
-    });
-    expect(screen.getByText("Mocked PopupModel Component")).toBeInTheDocument();
-  });
-
-  test("displays CCWithoutActivation UI when continueWithoutActivation is invoked", () => {
-    renderComponent();
-    act(() => {
-      fireEvent.click(screen.getByText("Mocked ThankYouCC Component"));
-    });
-    expect(screen.getByText("Mocked CCWithoutActivation Component")).toBeInTheDocument();
-  });
-
-  test("displays CCActivationSuccess UI on activation success", () => {
-    renderComponent();
-    act(() => {
-      fireEvent.click(screen.getByText("Mocked ThankYouCC Component"));
-    });
-    expect(screen.getByText("Mocked CCActivationSuccess Component")).toBeInTheDocument();
-  });
-
-  test("renders ThankYouError component on error UI display", () => {
-    renderComponent();
-    act(() => {
-      fireEvent.click(screen.getByText("Mocked ThankYouCC Component"));
-    });
-    expect(screen.getByText("Mocked ThankYouError Component")).toBeInTheDocument();
-  });
-});
-
-import "./review-page.scss";
-import { KeyWithAnyModel, StoreModel } from "../../../utils/model/common-model";
-import reviewpageData from "../../../assets/_json/review.json";
-import { authenticateType } from "../../../utils/common/change.utils";
-import { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import {
-  dispatchLoader,
-  getProductCategory,
-} from "../../../services/common-service";
-import Checkbox from "../../../shared/components/checkbox/checkbox";
-import TooltipModel from "../../../shared/components/model/tooltip-model";
-
-const ReviewPage = (props: KeyWithAnyModel) => {
-  const dispatch = useDispatch();
-  const stageSelector = useSelector((state: StoreModel) => state.stages.stages);
-  const reviewdata: KeyWithAnyModel = reviewpageData;
-  const [isTooltipOpen, setIsTooltipOpen] = useState(false);
-  const [isHideTooltipIcon, setIsHideTooltipIcon] = useState<boolean>(false);
-  const [isChecked, setIsChecked] = useState<boolean>(false);
-  const rpAuthInfo =
-    authenticateType() === "myinfo" ? reviewdata.myinfo : reviewdata.manual;
-  const [productDetails, setProductDetails] = useState({
-    productName: "",
-  });
-  const [filterLinkList, setFilterLinkList] = useState([]);
-  const [productCategory, setProductCategory] = useState("");
-  useEffect(() => {
-    dispatch(dispatchLoader(false));
-    setProductDetails((prevValue) => {
-      if (
-        stageSelector &&
-        stageSelector[0].stageInfo &&
-        stageSelector[0].stageInfo.products.length >= 1
-      ) {
-        prevValue.productName = stageSelector[0].stageInfo.products[0].name;
-      }
-      return { ...prevValue };
-    });
-
-    const productCtg = getProductCategory(stageSelector[0].stageInfo.products);
-    setProductCategory(productCtg);
-    const checkProductCategory =
-      productCtg === "CA" || productCtg === "SA" ? true : false;
-    setIsHideTooltipIcon(checkProductCategory);
-    if (checkProductCategory === true) {
-      setIsChecked(true);
-    }
-
-    let reviewLinks =
-      productCtg === "PL" ? reviewdata.PLLinks : reviewdata.CCPLReviewContent;
-    const fliteredLink: any = Object.entries(reviewLinks.contentLink).filter(
-      (link: KeyWithAnyModel) => {
-        return link;
-      }
-    );
-    setFilterLinkList(fliteredLink);
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  useEffect(() => {
-    if (isHideTooltipIcon) {
-      props.updateCheckboxStatus(true);
-    } else {
-      props.updateCheckboxStatus(isChecked);
-    }
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isChecked]);
-
-  return (
-    <>
-      {/*CASA begins */}
-      {productDetails && isHideTooltipIcon === true && (
-        <div className="field__group">
-          <div className="review__content">
-            <label className="review__content--header">
-              <p>{reviewdata.confirm.reviewPageHeader1}</p>
-            </label>
-            {rpAuthInfo.header && <label>{rpAuthInfo.header}</label>}
-            {rpAuthInfo.reviewDesc_1 && (
-              <div className="review__content--body">
-                <p>
-                  {rpAuthInfo.reviewDesc_1} {productDetails.productName}{" "}
-                  {rpAuthInfo.reviewDesc_2}
-                </p>
-              </div>
-            )}
-            {rpAuthInfo.reviewMyInfoDesc_1 && (
-              <div className="review__content--body">
-                {rpAuthInfo.reviewMyInfoDesc_1 && (
-                  <p>{rpAuthInfo.reviewMyInfoDesc_1}</p>
-                )}
-                {rpAuthInfo.reviewMyInfoDesc_1 && (
-                  <ol type="a">
-                    <li>{rpAuthInfo.reviewMyInfoDesc_2}</li>
-                    <li>{rpAuthInfo.reviewMyInfoDesc_3}</li>
-                    <li>{rpAuthInfo.reviewMyInfoDesc_4}</li>
-                  </ol>
-                )}
-                {rpAuthInfo.reviewMyInfoDesc_5 && (
-                  <p>
-                    {rpAuthInfo.reviewMyInfoDesc_5} {productDetails.productName}{" "}
-                    {rpAuthInfo.reviewMyInfoDesc_6}
-                  </p>
-                )}
-              </div>
-            )}
-            <label>{reviewdata.confirm.reviewDesc}</label>
-            <div className="review__content--body">
-              <p>{reviewdata.confirm.reviewDesc_1}</p>
-              <ol>
-                <li>{reviewdata.confirm.reviewDesc_2}</li>
-                <li>{reviewdata.confirm.reviewDesc_3}</li>
-                <li>{reviewdata.confirm.reviewDesc_4}</li>
-              </ol>
-              <p>{reviewdata.confirm.reviewDesc_5}</p>
-              <p>{reviewdata.confirm.reviewDesc_6}</p>
-              <p>{reviewdata.confirm.reviewDesc_7}</p>
-            </div>
-          </div>
-        </div>
-      )}
-      {/*CASA ends */}
-      {/*CCPL begins */}
-      {isHideTooltipIcon === false && (
-        <>
-          <div className="review__ccpl__content">
-            <div className="review__title">
-              <div className="review__title__label">
-              <p>{reviewdata.CCPL.reviewTitle1}</p>
-            </div>            
-            <div className="tool-tip__icon">
-              <div
-                className="tool-tip"
-                onClick={(event) =>
-                  setIsTooltipOpen(isTooltipOpen ? false : true)
-                }
-              ></div>
-            </div>             
-            </div>
-            {productCategory === "PL" && (
-              <>
-                <div className="review__top__content">
-                  <div>{reviewdata.PLLinks.contentStart}</div>
-                  {filterLinkList.map((links: KeyWithAnyModel) => {
-                    return (
-                      <>
-                        <a
-                          target="_blank"
-                          rel="noreferrer"
-                          href={links[1].path}
-                        >
-                          {links[1].name},
-                        </a>
-                      </>
-                    );
-                  })}
-                  {reviewdata.CCPLReviewContent.contentLinkDescp}
-                </div>
-                <div className="review__top__content">
-                  {reviewdata.PL.reviewContent1}
-                </div>
-              </>
-            )}
-          </div>
-          <div className="review__checkbox">
-          <Checkbox
-              reviewHeader={reviewdata.CCPL.reviewHeader}
-              reviewDescp1={reviewdata.CCPL.reviewDescp1}
-              reviewDescpoint1={reviewdata.CCPL.reviewDescpoint1}
-              reviewDescpoint2={reviewdata.CCPL.reviewDescpoint2}
-              reviewDescp2={reviewdata.CCPL.reviewDescp2}
-              reviewDescp3={reviewdata.CCPL.reviewDescp3}
-              reviewDescp4={reviewdata.CCPL.reviewDescp4}
-              checkedStatus={isChecked}
-              setCheckedStatus={setIsChecked}
-            />                        
-          </div>
-          {productCategory === "CC" && (
-            <div className="review__ccpl__content">
-              <div className="review__content--header">
-                <label>{reviewdata.CCPLReviewContent.contentHeading}</label>
-              </div>
-              <div>
-                {reviewdata.CCPLReviewContent.contentStart}
-                {filterLinkList.map((links: KeyWithAnyModel) => {
-                  return (
-                    <>
-                      <a target="_blank" rel="noreferrer" href={links[1].path}>
-                        {links[1].name},
-                      </a>
-                    </>
-                  );
-                })}
-                {reviewdata.CCPLReviewContent.contentLinkDescp},
-                {reviewdata.CCPLReviewContent.contentEnd}
-              </div>
-            </div>
-          )}
-        </>
-      )}
-      {/*CCPL ends */}
-      {isTooltipOpen && (
-        <TooltipModel
-          isTooltipOpen={isTooltipOpen}
-          data="review"
-          setIsTooltipOpen={setIsTooltipOpen}
-          productCategory={productCategory}
-        />
-      )}
-    </>
-  );
-};
-
-export default ReviewPage;
-
-import { render, screen, fireEvent } from "@testing-library/react";
-import { Provider } from "react-redux";
-import configureStore from "redux-mock-store";
-import ReviewPage from "./review-page";
-import reviewpageData from "../../../assets/_json/review.json";
-
-const mockStore = configureStore([]);
-const mockDispatch = jest.fn();
-
-jest.mock("../../../services/common-service", () => ({
-  dispatchLoader: jest.fn(),
-  getProductCategory: jest.fn(() => "CC"),
-}));
-
-jest.mock("../../../utils/common/change.utils", () => ({
-  authenticateType: jest.fn(() => "manual"),
-}));
-
-jest.mock("react-redux", () => ({
-  useSelector: jest.fn(),
-  useDispatch: () => mockDispatch,
-}));
-
-describe("ReviewPage Component", () => {
-  let store;
-
-  beforeEach(() => {
-    store = mockStore({
-      stages: {
-        stages: [
-          {
-            stageInfo: {
-              products: [
-                { name: "Product Name", category: "CC" },
-              ],
-            },
-          },
-        ],
-      },
-    });
-  });
-
-  const renderComponent = (props = {}) => {
-    render(
-      <Provider store={store}>
-        <ReviewPage {...props} />
-      </Provider>
-    );
-  };
-
-  test("renders CASA content when product category is CA or SA", () => {
-    jest.spyOn(require("../../../services/common-service"), "getProductCategory").mockReturnValue("CA");
-    renderComponent();
-
-    expect(screen.getByText(reviewpageData.confirm.reviewPageHeader1)).toBeInTheDocument();
-    expect(screen.getByText(reviewpageData.confirm.reviewDesc_1)).toBeInTheDocument();
-  });
-
-  test("renders CCPL content when product category is CC", () => {
-    jest.spyOn(require("../../../services/common-service"), "getProductCategory").mockReturnValue("CC");
-    renderComponent();
-
-    expect(screen.getByText(reviewpageData.CCPL.reviewTitle1)).toBeInTheDocument();
-    expect(screen.getByText(reviewpageData.CCPLReviewContent.contentHeading)).toBeInTheDocument();
-  });
-
-  test("displays tooltip when tooltip icon is clicked", () => {
-    renderComponent();
-
-    const tooltipIcon = screen.getByClass("tool-tip");
-    fireEvent.click(tooltipIcon);
-
-    expect(screen.getByText("review")).toBeInTheDocument();
-  });
-
-  test("checks if checkbox is selected when isHideTooltipIcon is true", () => {
-    jest.spyOn(require("../../../services/common-service"), "getProductCategory").mockReturnValue("CA");
-    const mockUpdateCheckboxStatus = jest.fn();
-
-    renderComponent({ updateCheckboxStatus: mockUpdateCheckboxStatus });
-
-    expect(mockUpdateCheckboxStatus).toHaveBeenCalledWith(true);
-  });
-
-  test("handles checkbox state update", () => {
-    const mockUpdateCheckboxStatus = jest.fn();
-
-    renderComponent({ updateCheckboxStatus: mockUpdateCheckboxStatus });
-
-    const checkbox = screen.getByRole("checkbox");
-    fireEvent.click(checkbox);
-
-    expect(mockUpdateCheckboxStatus).toHaveBeenCalled();
-  });
-
-  test("renders product name", () => {
-    renderComponent();
-
-    expect(screen.getByText("Product Name")).toBeInTheDocument();
-  });
-
-  test("renders links for CCPL content", () => {
-    jest.spyOn(require("../../../services/common-service"), "getProductCategory").mockReturnValue("CC");
-    renderComponent();
-
-    const links = reviewpageData.CCPLReviewContent.contentLink;
-    Object.entries(links).forEach(([key, value]) => {
-      expect(screen.getByText(value.name)).toBeInTheDocument();
-    });
-  });
-
-  test("renders PL-specific content when product category is PL", () => {
-    jest.spyOn(require("../../../services.common-service"), "getProductCategory").mockReturnValue("PL");
-    renderComponent();
-
-    expect(screen.getByText(reviewpageData.PL.reviewContent1)).toBeInTheDocument();
-  });
-
-  test("dispatches loader on mount", () => {
-    renderComponent();
-
-    expect(mockDispatch).toHaveBeenCalledWith(expect.any(Function));
-  });
-
-  test("updates props.updateCheckboxStatus based on isChecked", () => {
-    const mockUpdateCheckboxStatus = jest.fn();
-
-    renderComponent({ updateCheckboxStatus: mockUpdateCheckboxStatus });
-
-    expect(mockUpdateCheckboxStatus).toHaveBeenCalledWith(false);
-
-    const checkbox = screen.getByRole("checkbox");
-    fireEvent.click(checkbox);
-
-    expect(mockUpdateCheckboxStatus).toHaveBeenCalledWith(true);
-  });
-
-  test("renders tooltip icon when product category is CC", () => {
-    renderComponent();
-
-    const tooltipIcon = screen.getByClass("tool-tip__icon");
-    expect(tooltipIcon).toBeInTheDocument();
-  });
-});
-
-import "./review-page.scss";
-import { KeyWithAnyModel, StoreModel } from "../../../utils/model/common-model";
-import reviewpageData from "../../../assets/_json/review.json";
-import { authenticateType } from "../../../utils/common/change.utils";
-import { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import {
-  dispatchLoader,
-  getProductCategory,
-} from "../../../services/common-service";
-import Checkbox from "../../../shared/components/checkbox/checkbox";
-//import TooltipModel from "../../../shared/components/model/tooltip-model";
-
-const ReviewPage = (props: KeyWithAnyModel) => {
-  const dispatch = useDispatch();
-  const stageSelector = useSelector((state: StoreModel) => state.stages.stages);
-  const reviewdata: KeyWithAnyModel = reviewpageData;
-  const [isTooltipOpen, setIsTooltipOpen] = useState(false);
-  const [isHideTooltipIcon, setIsHideTooltipIcon] = useState<boolean>(false);
-  const [isChecked, setIsChecked] = useState<boolean>(false);
-  // const rpAuthInfo =
-  //   authenticateType() === "myinfo" ? reviewdata.myinfo : reviewdata.manual;
-  const [productDetails, setProductDetails] = useState({
-    productName: "",
-  });
-  const [filterLinkList, setFilterLinkList] = useState([]);
-  const [productCategory, setProductCategory] = useState("");
-  useEffect(() => {
-    dispatch(dispatchLoader(false));
-    setProductDetails((prevValue) => {
-      if (
-        stageSelector &&
-        stageSelector[0].stageInfo &&
-        stageSelector[0].stageInfo.products.length >= 1
-      ) {
-        prevValue.productName = stageSelector[0].stageInfo.products[0].name;
-      }
-      return { ...prevValue };
-    });
-
-    const productCtg = getProductCategory(stageSelector[0].stageInfo.products);
-    setProductCategory(productCtg);
-    const checkProductCategory =
-      productCtg === "CA" || productCtg === "SA" ? true : false;
-    setIsHideTooltipIcon(checkProductCategory);
-    if (checkProductCategory === true) {
-      setIsChecked(true);
-    }
-
-    let reviewLinks =
-      productCtg === "PL" ? reviewdata.PLLinks : reviewdata.CCPLReviewContent;
-    const fliteredLink: any = Object.entries(reviewLinks.contentLink).filter(
-      (link: KeyWithAnyModel) => {
-        return link;
-      }
-    );
-    setFilterLinkList(fliteredLink);
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  // useEffect(() => {
-  //   if (isHideTooltipIcon) {
-  //     props.updateCheckboxStatus(true);
-  //   } else {
-  //     props.updateCheckboxStatus(isChecked);
-  //   }
-
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, [isChecked]);
-
-  return (
-    <>
-      {/* CASA begins
-      {productDetails && isHideTooltipIcon === true && (
-        <div className="field__group">
-          <div className="review__content">
-            <label className="review__content--header">
-              <p>{reviewdata.confirm.reviewPageHeader1}</p>
-            </label>
-            {rpAuthInfo.header && <label>{rpAuthInfo.header}</label>}
-            {rpAuthInfo.reviewDesc_1 && (
-              <div className="review__content--body">
-                <p>
-                  {rpAuthInfo.reviewDesc_1} {productDetails.productName}{" "}
-                  {rpAuthInfo.reviewDesc_2}
-                </p>
-              </div>
-            )}
-            {rpAuthInfo.reviewMyInfoDesc_1 && (
-              <div className="review__content--body">
-                {rpAuthInfo.reviewMyInfoDesc_1 && (
-                  <p>{rpAuthInfo.reviewMyInfoDesc_1}</p>
-                )}
-                {rpAuthInfo.reviewMyInfoDesc_1 && (
-                  <ol type="a">
-                    <li>{rpAuthInfo.reviewMyInfoDesc_2}</li>
-                    <li>{rpAuthInfo.reviewMyInfoDesc_3}</li>
-                    <li>{rpAuthInfo.reviewMyInfoDesc_4}</li>
-                  </ol>
-                )}
-                {rpAuthInfo.reviewMyInfoDesc_5 && (
-                  <p>
-                    {rpAuthInfo.reviewMyInfoDesc_5} {productDetails.productName}{" "}
-                    {rpAuthInfo.reviewMyInfoDesc_6}
-                  </p>
-                )}
-              </div>
-            )}
-            <label>{reviewdata.confirm.reviewDesc}</label>
-            <div className="review__content--body">
-              <p>{reviewdata.confirm.reviewDesc_1}</p>
-              <ol>
-                <li>{reviewdata.confirm.reviewDesc_2}</li>
-                <li>{reviewdata.confirm.reviewDesc_3}</li>
-                <li>{reviewdata.confirm.reviewDesc_4}</li>
-              </ol>
-              <p>{reviewdata.confirm.reviewDesc_5}</p>
-              <p>{reviewdata.confirm.reviewDesc_6}</p>
-              <p>{reviewdata.confirm.reviewDesc_7}</p>
-            </div>
-          </div>
-        </div>
-      )} */}
-      {/*CASA ends */}
-      {/*CCPL begins */}
-      {isHideTooltipIcon === false && (
-        <>
-          <div className="review__ccpl__content">
-            <div className="review__title">
-              <div className="review__title__label">
-              <p>{reviewdata.CCPL.reviewTitle1}</p>
-            </div>            
-            <div className="tool-tip__icon">
-              <div
-                className="tool-tip"
-                onClick={(event) =>
-                  setIsTooltipOpen(isTooltipOpen ? false : true)
-                }
-              ></div>
-            </div>             
-            </div>
-            {/* {productCategory === "PL" && (
-              <>
-                <div className="review__top__content">
-                  <div>{reviewdata.PLLinks.contentStart}</div>
-                  {filterLinkList.map((links: KeyWithAnyModel) => {
-                    return (
-                      <>
-                        <a
-                          target="_blank"
-                          rel="noreferrer"
-                          href={links[1].path}
-                        >
-                          {links[1].name},
-                        </a>
-                      </>
-                    );
-                  })}
-                  {reviewdata.CCPLReviewContent.contentLinkDescp}
-                </div>
-                <div className="review__top__content">
-                  {reviewdata.PL.reviewContent1}
-                </div>
-              </>
-            )} */}
-          </div>
-          <div className="review__checkbox">
-          <Checkbox
-              reviewHeader={reviewdata.CCPL.reviewHeader}
-              reviewDescp1={reviewdata.CCPL.reviewDescp1}
-              reviewDescpoint1={reviewdata.CCPL.reviewDescpoint1}
-              reviewDescpoint2={reviewdata.CCPL.reviewDescpoint2}
-              reviewDescp2={reviewdata.CCPL.reviewDescp2}
-              reviewDescp3={reviewdata.CCPL.reviewDescp3}
-              reviewDescp4={reviewdata.CCPL.reviewDescp4}
-              checkedStatus={isChecked}
-              setCheckedStatus={setIsChecked}
-            />                        
-          </div>
-          {productCategory === "CC" && (
-            <div className="review__ccpl__content">
-              <div className="review__content--header">
-                <label>{reviewdata.CCPLReviewContent.contentHeading}</label>
-              </div>
-              <div>
-                {reviewdata.CCPLReviewContent.contentStart}
-                {filterLinkList.map((links: KeyWithAnyModel) => {
-                  return (
-                    <>
-                      <a target="_blank" rel="noreferrer" href={links[1].path}>
-                        {links[1].name},
-                      </a>
-                    </>
-                  );
-                })}
-                {reviewdata.CCPLReviewContent.contentLinkDescp},
-                {reviewdata.CCPLReviewContent.contentEnd}
-              </div>
-            </div>
-          )}
-        </>
-      )}
-      {/*CCPL ends */}
-      {/* {isTooltipOpen && (
-        <TooltipModel
-          isTooltipOpen={isTooltipOpen}
-          data="review"
-          setIsTooltipOpen={setIsTooltipOpen}
-          productCategory={productCategory}
-        />
-      )} */}
-    </>
-  );
-};
-
-export default ReviewPage;
-
-import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
-import { useDispatch, useSelector } from "react-redux";
-import ReviewPage from "./review-page";
-import reviewpageData from "../../../assets/_json/review.json";
-import { dispatchLoader, getProductCategory } from "../../../services/common-service";
-
-// Mock Redux hooks and external modules
-jest.mock("react-redux", () => ({
-  useDispatch: jest.fn(),
-  useSelector: jest.fn(),
-}));
-
-jest.mock("../../../services/common-service", () => ({
-  dispatchLoader: jest.fn(),
-  getProductCategory: jest.fn(),
-}));
-
-jest.mock("../../../shared/components/checkbox/checkbox", () => jest.fn((props) => (
-  <div data-testid="checkbox" onClick={() => props.setCheckedStatus(!props.checkedStatus)}>
-    Checkbox
-  </div>
-)));
-
-describe("ReviewPage Component", () => {
-  let mockDispatch: jest.Mock;
-  const mockStageSelector = [
-    {
-      stageInfo: {
-        products: [
-          {
-            name: "Test Product",
-          },
-        ],
-      },
-    },
-  ];
-
-  beforeEach(() => {
-    // Reset mocks
-    mockDispatch = jest.fn();
-    (useDispatch as jest.Mock).mockReturnValue(mockDispatch);
-    (useSelector as jest.Mock).mockReturnValue(mockStageSelector);
-    (getProductCategory as jest.Mock).mockReturnValue("CC");
-
-    jest.clearAllMocks();
-  });
-
-  it("should render ReviewPage with CCPL content", () => {
-    render(<ReviewPage />);
-
-    // Check CCPL content is rendered
-    expect(screen.getByText(reviewpageData.CCPL.reviewTitle1)).toBeInTheDocument();
-    expect(screen.getByText("Checkbox")).toBeInTheDocument();
-
-    // Verify loader dispatch
-    expect(dispatchLoader).toHaveBeenCalledWith(false);
-  });
-
-  it("should render CASA content when product category is CA or SA", () => {
-    (getProductCategory as jest.Mock).mockReturnValue("CA");
-    render(<ReviewPage />);
-
-    // CASA content assertions
-    expect(screen.getByText(reviewpageData.confirm.reviewPageHeader1)).toBeInTheDocument();
-    expect(screen.getByText(reviewpageData.confirm.reviewDesc_1)).toBeInTheDocument();
-  });
-
-  it("should set product details and product category on mount", () => {
-    render(<ReviewPage />);
-
-    // Verify product name is set correctly
-    expect(screen.getByText("Test Product")).toBeInTheDocument();
-
-    // Verify product category is fetched and content rendered
-    expect(getProductCategory).toHaveBeenCalledWith(mockStageSelector[0].stageInfo.products);
-    expect(screen.getByText(reviewpageData.CCPL.reviewHeader)).toBeInTheDocument();
-  });
-
-  it("should toggle tooltip visibility when icon is clicked", () => {
-    render(<ReviewPage />);
-
-    // Tooltip toggle
-    const tooltipIcon = screen.getByClassName("tool-tip");
-    expect(tooltipIcon).toBeInTheDocument();
-
-    fireEvent.click(tooltipIcon);
-    expect(screen.getByText("review")).toBeInTheDocument();
-
-    fireEvent.click(tooltipIcon);
-    expect(screen.queryByText("review")).not.toBeInTheDocument();
-  });
-
-  it("should update checkbox state and call prop function", () => {
-    const mockUpdateCheckboxStatus = jest.fn();
-
-    render(<ReviewPage updateCheckboxStatus={mockUpdateCheckboxStatus} />);
-
-    // Simulate checkbox click
-    const checkbox = screen.getByTestId("checkbox");
-    fireEvent.click(checkbox);
-
-    expect(mockUpdateCheckboxStatus).toHaveBeenCalledWith(true);
-
-    fireEvent.click(checkbox);
-    expect(mockUpdateCheckboxStatus).toHaveBeenCalledWith(false);
-  });
-
-  it("should filter and render dynamic links for CCPL content", () => {
-    render(<ReviewPage />);
-
-    const links = reviewpageData.CCPLReviewContent.contentLink;
-    Object.entries(links).forEach(([key, value]) => {
-      expect(screen.getByText(value.name)).toBeInTheDocument();
-    });
-  });
-
-  it("should render PL-specific content when product category is PL", () => {
-    (getProductCategory as jest.Mock).mockReturnValue("PL");
-    render(<ReviewPage />);
-
-    // PL content assertions
-    expect(screen.getByText(reviewpageData.PL.reviewContent1)).toBeInTheDocument();
-  });
-
-  it("should handle dispatch call when component mounts", () => {
-    render(<ReviewPage />);
-
-    // Verify dispatch call for loader
-    expect(mockDispatch).toHaveBeenCalledWith(false);
-  });
-
-  it("should set isChecked to true if isHideTooltipIcon is true", () => {
-    (getProductCategory as jest.Mock).mockReturnValue("CA");
-
-    render(<ReviewPage />);
-
-    expect(screen.getByTestId("checkbox")).toBeInTheDocument();
-  });
-});
-
-import { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { dispatchLoader } from "../../../services/common-service";
-import "./myinfo-singpass-login.scss";
-
-const MyinfoSingpassLogin = () => {
-  /*istanbul ignore next */
-  const authorizeSelector = useSelector(
-    (state: any) => state.authorize.authorize
-  );
-  const [singpassCredential, setsingpassCredential] = useState({
-    nric: "",
-    password: "",
-  });
-  const dispatch = useDispatch();
-  const [isProduction, setIsProduction] = useState(false);
-  const [isVirtualSingPass, setIsVirtualSingPass] = useState(false);
-  const [isPasswordFilled,setIsPasswordFilled] = useState(false)
-
-  useEffect(() => {
-    if (`${process.env.REACT_APP_PRODUCTION}` !== "Y") {
-      setIsProduction(true);
-    } else {
-      dispatch(dispatchLoader(true));
-      doRealSingpassLogin();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const changeHandler = (event: React.ChangeEvent<HTMLInputElement>) => {
-    debugger
-    setsingpassCredential((prevUser: any) => {
-      prevUser[event.target.name] = event.target.value;
-      if(event.target.value.trim().length >0){
-        setIsPasswordFilled(true)
-
-      }
-      return { ...prevUser };
-      
-    });
-  };
-
-  const blurHandler = (event: React.ChangeEvent<HTMLInputElement>) => {
-    /*istanbul ignore else */
-    if (event.target.validity.valid) {
-      setsingpassCredential((prevUser: any) => {
-        prevUser[event.target.name] = event.target.value;
-        return { ...prevUser };
-      });
-    }
-  };
-
-  const signPassHandler = (data?: string) => {
-    if (data === "virtual") {
-      /*istanbul ignore else */
-      if (
-        singpassCredential.nric !== "" &&
-        singpassCredential.password !== ""
-      ) {
-        const hostUrl = `${process.env.REACT_APP_HOST_URL}`;
-        dispatch(dispatchLoader(true));
-        let myinfoCallbackUrl = `#${
-          process.env.REACT_APP_RTOB_CALLBACK_URL + singpassCredential.nric
-        }`;
-          window.location.href = hostUrl + myinfoCallbackUrl;       
-      } else {
-        setsingpassCredential({
-          nric: "",
-          password: "",
-        });
-      }
-    } else {
-      dispatch(dispatchLoader(true));
-      doRealSingpassLogin();
-    }
-  };
-
-  const doRealSingpassLogin = () => {
-    /*istanbul ignore else */
-    if (authorizeSelector && authorizeSelector.attributes[0]) {
-      const {
-        client_id,
-        scope,
-        purpose_id,
-        code_challenge,
-        code_challenge_method,
-        response_type,
-        redirect_uri,
-      } = authorizeSelector.attributes[0];
-
-      const authorizeUrl =
-        process.env.REACT_APP_SINGPASS_URL +
-        "?client_id=" +
-        client_id +
-        "&scope=" +
-        scope +
-        "&purpose_id=" +
-        purpose_id +
-        "&code_challenge=" +
-        code_challenge +
-        "&code_challenge_method=" +
-        code_challenge_method +
-        "&response_type=" +
-        response_type +
-        "&redirect_uri=" +
-        redirect_uri;
-      window.location.href = authorizeUrl;
-    }
-  };
-
-  const virtualSingPass = () => {
-    setIsVirtualSingPass(true);
-  };
-  return (
-    <>
-      {isProduction && (
-        <div className={`singpass-modal ${!isVirtualSingPass ? "auth" : ""}`}>
-          {!isVirtualSingPass ? (
-            <div>
-              <div className="singpass-model__auth">
-                <div className="singpass-model__question">
-                  Do you want to proceed with Virtual Singpass or Singpass?
-                </div>
-                <div className="singpass-model__btn">
-                  <button type="button" onClick={virtualSingPass}>
-                    Virtual Singpass
-                  </button>
-                  <button type="button" onClick={() => signPassHandler()}>
-                    Real Singpass
-                  </button>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="singpass-modal__body">
-              <form name="singpassLoginForm">
-                <div className="singpass-modal__header">Singpass Credentials</div>
-                <div className="singpass-modal__form-group">
-                  <div className="singpass-modal__credentials">
-                    <input
-                      type="text"
-                      placeholder="Username"
-                      name="nric"
-                      onBlur={blurHandler.bind(this)}
-                      onChange={changeHandler.bind(this)}
-                      value={singpassCredential.nric}
-                    />
-                    <input
-                      type="password"
-                      placeholder="Password"
-                      name="password"
-                      onBlur={blurHandler.bind(this)}
-                      onChange={changeHandler.bind(this)}
-                      value={singpassCredential.password}
-                    />
-                  </div>
-                  <div className="singpass-modal__submit">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        signPassHandler("virtual")}}
-                      disabled = {!isPasswordFilled}
-                    >
-                      Login Virtua MyInfo
-                    </button>
-                  </div>
-                </div>
-              </form>
-              {/* <div className="singpass-modal__submit">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        signPassHandler("virtual")}}
-                      disabled = {!isPasswordFilled}
-                    >
-                      Login Virtua MyInfo
-                    </button>
-                  </div> */}
-             
-            </div>
-          )}
-        </div>
-      )}
-    </>
-  );
-};
-
-export default MyinfoSingpassLogin;
-
-import { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { dispatchLoader } from "../../../services/common-service";
-import "./myinfo-singpass-login.scss";
-
-const MyinfoSingpassLogin = () => {
-  /*istanbul ignore next */
-  const authorizeSelector = useSelector(
-    (state: any) => state.authorize.authorize
-  );
-  const [singpassCredential, setsingpassCredential] = useState({
-    nric: "",
-    password: "",
-  });
-  const dispatch = useDispatch();
-  const [isProduction, setIsProduction] = useState(false);
-  const [isVirtualSingPass, setIsVirtualSingPass] = useState(false);
-  const [isPasswordFilled, setIsPasswordFilled] = useState(false);
-
-  useEffect(() => {
-    if (`${process.env.REACT_APP_PRODUCTION}` !== "Y") {
-      setIsProduction(true);
-    } else {
-      dispatch(dispatchLoader(true));
-      doRealSingpassLogin();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const changeHandler = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setsingpassCredential((prevUser: any) => {
-      prevUser[event.target.name] = event.target.value;
-      // Check if password field is filled
-      if (event.target.name === "password") {
-        setIsPasswordFilled(event.target.value.trim().length > 0);
-      }
-      return { ...prevUser };
-    });
-  };
-
-  const blurHandler = (event: React.ChangeEvent<HTMLInputElement>) => {
-    /*istanbul ignore else */
-    if (event.target.validity.valid) {
-      setsingpassCredential((prevUser: any) => {
-        prevUser[event.target.name] = event.target.value;
-        return { ...prevUser };
-      });
-    }
-  };
-
-  const signPassHandler = (data?: string) => {
-    if (data === "virtual") {
-      if (
-        singpassCredential.nric !== "" &&
-        singpassCredential.password !== ""
-      ) {
-        const hostUrl = `${process.env.REACT_APP_HOST_URL}`;
-        dispatch(dispatchLoader(true));
-        let myinfoCallbackUrl = `#${
-          process.env.REACT_APP_RTOB_CALLBACK_URL + singpassCredential.nric
-        }`;
-        window.location.href = hostUrl + myinfoCallbackUrl;
-      } else {
-        setsingpassCredential({
-          nric: "",
-          password: "",
-        });
-      }
-    } else {
-      dispatch(dispatchLoader(true));
-      doRealSingpassLogin();
-    }
-  };
-
-  const doRealSingpassLogin = () => {
-    if (authorizeSelector && authorizeSelector.attributes[0]) {
-      const {
-        client_id,
-        scope,
-        purpose_id,
-        code_challenge,
-        code_challenge_method,
-        response_type,
-        redirect_uri,
-      } = authorizeSelector.attributes[0];
-
-      const authorizeUrl =
-        process.env.REACT_APP_SINGPASS_URL +
-        "?client_id=" +
-        client_id +
-        "&scope=" +
-        scope +
-        "&purpose_id=" +
-        purpose_id +
-        "&code_challenge=" +
-        code_challenge +
-        "&code_challenge_method=" +
-        code_challenge_method +
-        "&response_type=" +
-        response_type +
-        "&redirect_uri=" +
-        redirect_uri;
-      window.location.href = authorizeUrl;
-    }
-  };
-
-  const virtualSingPass = () => {
-    setIsVirtualSingPass(true);
-  };
-
-  return (
-    <>
-      {isProduction && (
-        <div className={`singpass-modal ${!isVirtualSingPass ? "auth" : ""}`}>
-          {!isVirtualSingPass ? (
-            <div>
-              <div className="singpass-model__auth">
-                <div className="singpass-model__question">
-                  Do you want to proceed with Virtual Singpass or Singpass?
-                </div>
-                <div className="singpass-model__btn">
-                  <button type="button" onClick={virtualSingPass}>
-                    Virtual Singpass
-                  </button>
-                  <button type="button" onClick={() => signPassHandler()}>
-                    Real Singpass
-                  </button>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="singpass-modal__body">
-              <form name="singpassLoginForm">
-                <div className="singpass-modal__header">Singpass Credentials</div>
-                <div className="singpass-modal__form-group">
-                  <div className="singpass-modal__credentials">
-                    <input
-                      type="text"
-                      placeholder="Username"
-                      name="nric"
-                      onBlur={blurHandler}
-                      onChange={changeHandler}
-                      value={singpassCredential.nric}
-                    />
-                    <input
-                      type="password"
-                      placeholder="Password"
-                      name="password"
-                      onBlur={blurHandler}
-                      onChange={changeHandler}
-                      value={singpassCredential.password}
-                    />
-                  </div>
-                  <div className="singpass-modal__submit">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        signPassHandler("virtual");
-                      }}
-                      disabled={!isPasswordFilled}
-                    >
-                      Login Virtua MyInfo
-                    </button>
-                  </div>
-                </div>
-              </form>
-            </div>
-          )}
-        </div>
-      )}
-    </>
-  );
-};
-
-export default MyinfoSingpassLogin;
-
-const [isNRICFilled, setIsNRICFilled] = useState(false);
-const [isPasswordFilled, setIsPasswordFilled] = useState(false);
-const [isButtonEnabled, setIsButtonEnabled] = useState(false);
-
-const changeHandler = (event: React.ChangeEvent<HTMLInputElement>) => {
-  const { name, value } = event.target;
-
-  setsingpassCredential((prevUser: any) => {
-    const updatedCredentials = {
-      ...prevUser,
-      [name]: value,
-    };
-
-    // Check individual fields
-    setIsNRICFilled(updatedCredentials.nric.trim().length > 0);
-    setIsPasswordFilled(updatedCredentials.password.trim().length > 0);
-
-    // Enable the button only if both fields are filled
-    setIsButtonEnabled(
-      updatedCredentials.nric.trim().length > 0 &&
-      updatedCredentials.password.trim().length > 0
-    );
-
-    return updatedCredentials;
-  });
-};
-
- if (
-      (props.data.mandatory === "Yes" ||
-        props.data.mandatory === "Conditional") &&
-      event.target.value.length < 1 &&
-      props.data.logical_field_name !== "referral_id_2"
+      stageSelector[0] &&
+      stageSelector[0].stageInfo &&
+      stageSelector[0].stageInfo.applicants
     ) {
-      setError(`${errorMsg.emity} ${props.data.rwb_label_name}`);
-    } 
-    else if (
-      `${event.target.value}`[0] === " " ||
-      `${event.target.value}`[`${event.target.value}`.length - 1] === " "
-    ) {
-      setError(
-        `${props.data.rwb_label_name} cannot have leading or trailing spaces`
+      let userUpdateValue = null;
+      const userUpdateStageSelector = updatedStageInputsSelector.findIndex(
+        (ref: any) => ref && ref.stageId === stageSelector[0].stageId
       );
-    } else if (
-      props.data.regex &&
-      !`${event.target.value}`.match(props.data.regex) &&
-      props.data.logical_field_name !== "referral_id_2" && props.data.logical_field_name !== "name_of_business" &&
-      props.data.logical_field_name !== "full_name" &&props.data.logical_field_name !== "NRIC"
-) {
-      setError(`${errorMsg.patterns}${props.data.rwb_label_name} `);
+      if (userUpdateStageSelector > -1) {
+        userUpdateValue = updatedStageInputsSelector[userUpdateStageSelector].applicants[fieldName];
+      }
+      const userInputResponse = userInputSelector.applicants[fieldName];
+      storeValue =
+        userInputResponse ||
+        userUpdateValue ||
+        stageSelector[0].stageInfo.applicants[fieldName];
+    }    
+    return !(storeValue && (inputValue !== storeValue));
+  }; 
+  useEffect(() => {
+    if (
+      stageSelector &&
+      stageSelector[0] &&
+      stageSelector[0].stageInfo &&
+      stageSelector[0].stageInfo.applicants
+    ) {
+      const userInputResponse =
+        userInputSelector.applicants[props.data.logical_field_name + "_a_1"];
 
-    }
-    else if (
-      props.data.regex &&
-      !`${event.target.value}`.match(props.data.regex) &&
-      props.data.logical_field_name !== "referral_id_2" && props.data.logical_field_name !== "name_of_business" &&
-      props.data.logical_field_name == "full_name"
+      const stageIndex = getUrl
+        .getUpdatedStage()
+        .updatedStageInputs.findIndex(
+          (ref: any) => ref && ref.stageId === stageSelector[0].stageId
+        );
+      let updatedVal = null;
+      if (stageIndex > -1) {
+        updatedVal =
+          getUrl.getUpdatedStage().updatedStageInputs[stageIndex].applicants[
+            props.data.logical_field_name + "_a_1"
+          ];
+      }
+      
+      let fieldValue = "";
+      if (updatedVal) {
+        fieldValue = updatedVal;
+      } else if (userInputResponse) {
+        fieldValue = userInputResponse;
+      } else if (
+        stageSelector[0].stageInfo.applicants[
+          props.data.logical_field_name + "_a_1"
+        ] &&
+        updatedVal !== ""
+      ) {
+        fieldValue =
+          stageSelector[0].stageInfo.applicants[
+            props.data.logical_field_name + "_a_1"
+          ];
+      }
 
-    ) {
-      setError(`${errorMsg.fullName} `);
-      
+      setDefaultValue(fieldValue);   
+      setValueUpdate(fieldValue)   
     }
-     else if (
-      props.data.min_length &&
-      `${event.target.value}`.length < props.data.min_length &&
-      props.data.logical_field_name !== "referral_id_2"
-    ) {
-      setError(`${errorMsg.minLength} ${props.data.min_length} characters`);
-    } else if (
-      props.data.logical_field_name === "NRIC" &&
-      specialCharRegex.test(event.target.value) 
-      
-    ) {
-      setError(`${errorMsg.nricAn}`);
-    } else if(props.data.logical_field_name === "name_of_business" && event.target.value.length>1){
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);    
+useEffect(() => {  
+  if (existingCashone && applicantsSelector.other_bank_account_bt_a_1 !== applicantsSelector.reenter_other_bank_account_bt_a_1) {
+    if (applicantsSelector.reenter_other_bank_account_bt_a_1 !== '' && props.data.logical_field_name === "reenter_other_bank_account_bt") {
+      showAccountNumError();
+    }
+  } 
+  if (
+    isValidInput(userInputSelector.applicants[props.data.logical_field_name + "_a_1"], props) &&
+    accountNumValidation(
+      userInputSelector.applicants[props.data.logical_field_name + "_a_1"],
+      props
+    )
+  ) {    
+    if (existingCashone && otherBankfields) {
+      setError(`${errorMsg.patterns} ${props.data.rwb_label_name}`);
+    } else {
       setError("");
-    } 
-    else {
-      setError(
-        !event.target.validity.valid &&
-        props.data.logical_field_name !== "referral_id_2"
-          ? `${errorMsg.patterns} ${props.data.rwb_label_name}`
-          : ""
-      );
     }
-    // if (
-    //   props.data.logical_field_name === "referral_id_2" &&
-    //   referralcodeSelector &&
-    //   referralcodeSelector.errormsg !== ""
-    // ) {
-    //   setError("");
-    // }
+    props.handleCallback(
+      props.data,
+      userInputSelector.applicants[props.data.logical_field_name + "_a_1"]
+    );
+  }
+// eslint-disable-next-line react-hooks/exhaustive-deps
+}, [userInputSelector.applicants]);
+  useEffect(() => {
+      dispatch(isFieldUpdate(props, defaultValue, props.data.logical_field_name));
+     let checkOtherBank =(existingCashone && (props.data.logical_field_name === 'other_bank_account_bt' || props.data.logical_field_name ==='reenter_other_bank_account_bt')
+       && stageSelector[0].stageId === "ld-1") ? false : true;
+      if (checkOtherBank && stageSelector[0].stageId !== "ad-2") {
+        props.handleCallback(props.data, defaultValue);
+      }
+      props.handleFieldDispatch(props.data.logical_field_name, defaultValue);         
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [valueUpdate]);
+
+  const bindHandler = (
+    fieldName: string,
+    event: React.FocusEvent<HTMLInputElement>
+  ) => {    
+    const fieldValue = event.target.value;    
+    if (
+      fieldValue &&
+      fieldName !== "postal_code" &&
+      event.target.validity.valid
+    ) {
+      let checkOtherBank =(existingCashone && (fieldName === 'other_bank_account_bt' || fieldName ==='reenter_other_bank_account_bt')
+       && stageSelector[0].stageId === "ld-1") ? false : true;
+      if (checkOtherBank && stageSelector[0].stageId !== "ad-2") {
+        props.handleCallback(props.data, event.target.value);
+      }   
+      setValueUpdate(fieldValue)
+    }    
+
   };
+
+  useEffect(() => {
+    if (fieldError(fieldErrorSelector, props)) {
+      if (!error) { 
+        if (stageSelector[0].stageId !== "ad-2") {           
+          setError(`${errorMsg.patterns} ${props.data.rwb_label_name}`);        
+        } else if (isValidInput(userInputSelector.applicants[props.data.logical_field_name + "_a_1"], props) && !accountNumValidation(userInputSelector.applicants[props.data.logical_field_name + "_a_1"], props)){
+          showAccountNumError();
+        } else {
+          setError(`${errorMsg.patterns} ${props.data.rwb_label_name}`);
+        }
+      }
+    } else {
+      if (existingCashone && otherBankfields) {
+        setError(`${errorMsg.patterns} ${props.data.rwb_label_name}`);
+      } else {
+        setError("");
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fieldErrorSelector]);
+
+  const placeHolderText = () => {
+    return props.data.rwb_label_name;
+  };
+
+  const focusHandler = (
+    fieldName: string,
+    event: React.FocusEvent<HTMLInputElement>
+  ) => {
+    dispatch(lastAction.getField(fieldName));
+  };
+  const pastefunction = (event: any) => {
+    if (props.data.logical_field_name === 'reenter_other_bank_account_bt') {
+      event.preventDefault();
+    }
+  };
+  return (
+    <>
+      <div className="number text">
+        <label htmlFor={props.data.logical_field_name}>
+          {props.data.rwb_label_name}
+        </label>
+        <input
+          type={props.data.type}
+          name={props.data.logical_field_name}
+          aria-label={props.data.logical_field_name}
+          id={props.data.logical_field_name + "_a_1"}
+          placeholder={placeHolderText()}
+          value={defaultValue}
+          minLength={props.data.min_length}
+          maxLength={props.data.length}
+          pattern={props.data.regex}
+          onChange={changeHandler.bind(this, props.data.logical_field_name)}
+          onBlur={bindHandler.bind(this, props.data.logical_field_name)}
+          disabled={props.data.editable || stageSelector[0].stageId === "bd-1"}
+          onFocus={focusHandler.bind(this, props.data.logical_field_name)}
+          onPaste={pastefunction}
+          className={`${
+            isPostalCodeFetch ? "disabled" : ""
+          }`}
+        />
+        {isPostalCodeFetch && <span className={`${props.data.logical_field_name} circle-spinner`}></span>}
+        {error && <span className="error-msg">{error}</span>}
+      </div>
+    </>
+  );
+};
+
+export default Number;
