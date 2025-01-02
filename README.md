@@ -412,3 +412,156 @@ describe('Number Component', () => {
     expect(screen.getByText(/Postal Code/)).toBeInTheDocument();
   });
 });
+
+import React from 'react';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { Provider } from 'react-redux';
+import configureStore from 'redux-mock-store';
+import thunk from 'redux-thunk';
+import Number from './number';
+import { postalCodeValidation } from './number.utils';
+import { postalCodeAction } from '../../../utils/store/postal-code';
+
+const middlewares = [thunk];
+const mockStore = configureStore(middlewares);
+
+jest.mock('./number.utils', () => ({
+  postalCodeValidation: jest.fn().mockResolvedValue({}),
+}));
+
+jest.mock('../../../utils/store/postal-code', () => ({
+  postalCodeAction: {
+    setPostalCode: jest.fn(),
+  },
+}));
+
+const initialState = {
+  stages: {
+    stages: [
+      {
+        stageInfo: {
+          products: [{ product_type: '280' }],
+          application: { channel_reference: '12345' },
+          applicants: {
+            other_bank_account_bt_a_1: '',
+            reenter_other_bank_account_bt_a_1: '',
+          },
+        },
+        stageId: 'ld-1',
+      },
+    ],
+    journeyType: 'ETC',
+    userInput: {
+      applicants: {},
+    },
+    updatedStageInputs: [],
+  },
+  fielderror: {
+    error: null,
+  },
+};
+
+const mockProps = {
+  data: {
+    logical_field_name: 'postal_code',
+    rwb_label_name: 'Postal Code',
+    type: 'text',
+    mandatory: 'Yes',
+    regex: '\\d{5}',
+    min_length: 5,
+    length: 5,
+    editable: true,
+  },
+  handleCallback: jest.fn(),
+  handleFieldDispatch: jest.fn(),
+};
+
+const renderComponent = (state = initialState) => {
+  const store = mockStore(state);
+  render(
+    <Provider store={store}>
+      <Number {...mockProps} />
+    </Provider>
+  );
+};
+
+describe('changeHandler function', () => {
+  let event;
+
+  beforeEach(() => {
+    renderComponent();
+    event = {
+      target: {
+        value: '',
+        validity: {
+          valid: true,
+        },
+      },
+    };
+  });
+
+  it('should call handleCallback with props.data and input value if input is valid', () => {
+    event.target.value = '12345';
+    fireEvent.change(screen.getByLabelText('Postal Code'), event);
+
+    expect(mockProps.handleCallback).toHaveBeenCalledWith(
+      mockProps.data,
+      '12345'
+    );
+  });
+
+  it('should set an error if input is empty and mandatory', () => {
+    event.target.validity.valid = false;
+    fireEvent.change(screen.getByLabelText('Postal Code'), event);
+
+    expect(screen.getByText(/Postal Code/)).toBeInTheDocument();
+  });
+
+  it('should set an error if input does not match regex', () => {
+    event.target.value = '1234';
+    event.target.validity.valid = false;
+    fireEvent.change(screen.getByLabelText('Postal Code'), event);
+
+    expect(screen.getByText(/Postal Code/)).toBeInTheDocument();
+  });
+
+  it('should set an error if input length is less than min_length', () => {
+    event.target.value = '1234';
+    fireEvent.change(screen.getByLabelText('Postal Code'), event);
+
+    expect(screen.getByText(/Postal Code/)).toBeInTheDocument();
+  });
+
+  it('should dispatch postalCodeValidation if postal code is valid', async () => {
+    event.target.value = '12345';
+    event.target.validity.valid = true;
+    fireEvent.change(screen.getByLabelText('Postal Code'), event);
+
+    expect(postalCodeValidation).toHaveBeenCalledWith(
+      '12345',
+      '12345',
+      initialState.stages.stages[0].stageInfo.applicants
+    );
+
+    await screen.findByText(/Postal Code/);
+
+    expect(postalCodeAction.setPostalCode).toHaveBeenCalled();
+  });
+
+  it('should dispatch isFieldUpdate if other_bank_account_bt and stageId is not ad-2', () => {
+    event.target.value = 'bank123';
+    fireEvent.change(screen.getByLabelText('Postal Code'), event);
+
+    expect(mockProps.handleCallback).toHaveBeenCalled();
+  });
+
+  it('should show account number error if validation fails', () => {
+    event.target.value = '123';
+    fireEvent.change(screen.getByLabelText('Postal Code'), event);
+
+    expect(mockProps.handleCallback).toHaveBeenCalledWith(
+      mockProps.data,
+      ''
+    );
+  });
+});
