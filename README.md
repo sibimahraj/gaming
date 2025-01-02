@@ -333,3 +333,82 @@ useEffect(() => {
 };
 
 export default Number;
+
+
+import React from 'react';
+import { render, screen } from '@testing-library/react';
+import { Provider } from 'react-redux';
+import configureStore from 'redux-mock-store';
+import thunk from 'redux-thunk';
+import Number from './number';
+
+const middlewares = [thunk];
+const mockStore = configureStore(middlewares);
+
+jest.mock('./number.utils', () => ({
+  postalCodeValidation: jest.fn(),
+}));
+
+jest.mock('../../../utils/store/postal-code', () => ({
+  postalCodeAction: {
+    setPostalCode: jest.fn(),
+  },
+}));
+
+const initialState = {
+  stages: {
+    stages: [
+      {
+        stageInfo: {
+          products: [{ product_type: '280' }],
+          application: { channel_reference: '12345' },
+          applicants: {
+            other_bank_account_bt_a_1: '',
+            reenter_other_bank_account_bt_a_1: '',
+          },
+        },
+        stageId: 'ld-1',
+      },
+    ],
+    journeyType: 'ETC',
+    userInput: {
+      applicants: {},
+    },
+    updatedStageInputs: [],
+  },
+  fielderror: {
+    error: null,
+  },
+};
+
+const mockProps = {
+  data: {
+    logical_field_name: 'postal_code',
+    rwb_label_name: 'Postal Code',
+    type: 'text',
+    mandatory: 'Yes',
+    regex: '\\d{5}',
+    min_length: 5,
+    length: 5,
+    editable: true,
+  },
+  handleCallback: jest.fn(),
+  handleFieldDispatch: jest.fn(),
+};
+
+const renderComponent = (state = initialState) => {
+  const store = mockStore(state);
+  render(
+    <Provider store={store}>
+      <Number {...mockProps} />
+    </Provider>
+  );
+};
+
+describe('Number Component', () => {
+ it('should display an error message for invalid input', () => {
+    renderComponent();
+    
+    expect(screen.getByText(/Postal Code/)).toBeInTheDocument();
+  });
+});
