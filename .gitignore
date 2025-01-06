@@ -704,3 +704,62 @@ expect(received).toHaveBeenCalledWith(...expected)
 
       at Object.toHaveBeenCalledWith (src/modules/dashboard/thank-you/thank-you.test.tsx:233:36)
 
+
+it("should correctly update application details based on stageSelector and other conditions", () => {
+  const mockStageSelector = [
+    {
+      stageInfo: {
+        products: [
+          {
+            product_category: "PL",
+            name: "Personal Loan",
+            product_sequence_number: "12345",
+            product_type: "PL001",
+            acct_details: [
+              {
+                account_number: "ACC12345",
+                card_no: "CARD12345",
+              },
+            ],
+            offer_details: [
+              {
+                fees: [
+                  {
+                    fee_amount: 500,
+                  },
+                ],
+              },
+            ],
+            campaign: "FeeFreeCampaign",
+          },
+        ],
+        applicants: {
+          embossed_name_a_1: "John Doe",
+          loan_tenor_a_1: 24,
+          required_loan_amount_a_1: 100000,
+          auth_mode_a_1: "IX",
+        },
+      },
+      stageId: "Stage123",
+    },
+  ];
+
+  const mockStore = configureStore([]);
+  const store = mockStore({
+    stages: {
+      stages: mockStageSelector,
+      isDocumentUpload: false,
+    },
+  });
+
+  render(
+    <Provider store={store}>
+      <ThankYou />
+    </Provider>
+  );
+
+  // Assert updated application details
+  expect(screen.getByTestId(/app__body/)).toBeInTheDocument();
+  // You can further validate changes to `applicationDetails` state if necessary.
+});
+
