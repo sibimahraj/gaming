@@ -526,3 +526,34 @@ describe("PendingApplication Component", () => {
       at memoizedSelector (node_modules/use-sync-external-store/cjs/use-sync-external-store-shim/with-selector.development.js:79:30)
       at getSnapshotWithSelector (node_modules/use-sync-external-store/cjs/use-sync-external-store-shim/with-selector.development.js:134:14)
       at mountSyncExternalStore (node_modules/react-dom/cjs/react-dom.development.js:16799:20)
+
+it("should show a message when there are no pending applications", () => {
+  const mockDispatch = jest.fn();
+  jest.spyOn(ReactRedux, "useDispatch").mockReturnValue(mockDispatch);
+
+  // Mock the `useSelector` to return empty pendingApplication
+  jest.spyOn(ReactRedux, "useSelector").mockImplementation((selector) =>
+    selector({
+      pendingApplication: {
+        pendingApplication: [], // Empty applications to trigger `setEmptyApplication(true)`
+      },
+    })
+  );
+
+  // Mock `setState` for `emptyApplication`
+  jest
+    .spyOn(React, "useState")
+    .mockImplementationOnce(() => [true, jest.fn()]); // Simulate `setEmptyApplication(true)`
+
+  render(
+    <MemoryRouter>
+      <PendingApplication />
+    </MemoryRouter>
+  );
+
+  // Assert that the empty message is displayed
+  expect(screen.getByText(/Sorry! there are no pending applications found to continue/i)).toBeInTheDocument();
+
+  // Validate that dispatchLoader was called
+  expect(mockDispatch).toHaveBeenCalledWith(expect.any(Function));
+});
