@@ -713,4 +713,31 @@ describe('Alias Component', () => {
   });
 });
 
+it("should show a message when there are no pending applications", () => {
+  const mockDispatch = jest.fn();
+  (useDispatch as jest.Mock).mockReturnValue(mockDispatch);
+
+  jest.spyOn(React, "useState").mockImplementationOnce(() => [true, jest.fn()]); // Simulate setEmptyApplication(true)
+
+  (useSelector as jest.Mock).mockImplementation((selectorFn) => {
+    if (selectorFn.toString().includes("state.pendingApplication")) {
+      return { pendingApplication: [] }; // Empty applications to trigger setEmptyApplication(true)
+    }
+    return null;
+  });
+
+  render(
+    <MemoryRouter>
+      <PendingApplication />
+    </MemoryRouter>
+  );
+
+  // Assert the "no applications" message is displayed
+  expect(
+    screen.getByText(/Sorry! there are no pending applications found to continue/i)
+  ).toBeInTheDocument();
+
+  // Validate dispatch was called with loader action
+  expect(mockDispatch).toHaveBeenCalledWith(expect.any(Function));
+});
 
