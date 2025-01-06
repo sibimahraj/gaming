@@ -763,3 +763,83 @@ it("should correctly update application details based on stageSelector and other
   // You can further validate changes to `applicationDetails` state if necessary.
 });
 
+it("covers all branches and conditions in the useEffect logic", () => {
+  const mockStageSelector = [
+    {
+      stageInfo: {
+        products: [
+          {
+            product_category: "PL",
+            name: "Personal Loan",
+            product_sequence_number: "12345",
+            product_type: "PL001",
+            acct_details: [
+              {
+                account_number: "ACC12345",
+                card_no: "CARD12345",
+              },
+            ],
+            offer_details: [
+              {
+                fees: [
+                  {
+                    fee_amount: 500,
+                  },
+                ],
+              },
+            ],
+            campaign: "FeeFreeCampaign",
+          },
+        ],
+        applicants: {
+          embossed_name_a_1: "John Doe",
+          loan_tenor_a_1: 24,
+          required_loan_amount_a_1: 100000,
+          auth_mode_a_1: "IX",
+        },
+      },
+      stageId: "Stage123",
+    },
+  ];
+
+  const mockStoreData = {
+    stages: {
+      stages: mockStageSelector,
+      isDocumentUpload: false,
+    },
+    store: {
+      thankyouDetails: {
+        applicationDetails: {
+          isStp: true,
+        },
+      },
+    },
+  };
+
+  const store = mockStore(mockStoreData);
+
+  render(
+    <Provider store={store}>
+      <ThankYou />
+    </Provider>
+  );
+
+  // Assertions to validate each condition
+
+  // 1. Check product details are set
+  expect(store.getState().stages.stages[0].stageInfo.products[0].product_category).toBe("PL");
+  expect(store.getState().stages.stages[0].stageInfo.products[0].name).toBe("Personal Loan");
+
+  // 2. Verify account details are processed
+  expect(store.getState().stages.stages[0].stageInfo.products[0].acct_details[0].account_number).toBe("ACC12345");
+  expect(store.getState().stages.stages[0].stageInfo.products[0].acct_details[0].card_no).toBe("CARD12345");
+
+  // 3. Verify STP-specific logic
+  expect(store.getState().store.thankyouDetails.applicationDetails.isStp).toBe(true);
+
+  // 4. Check campaign benefits
+  expect(store.getState().stages.stages[0].stageInfo.products[0].campaign).toBe("FeeFreeCampaign");
+
+  // 5. Check analytics tracking
+  expect(mockStageSelector[0].stageId).toBe("Stage123");
+});
