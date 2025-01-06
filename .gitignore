@@ -259,3 +259,110 @@ describe("DynamicModel Component - Combined Test Suite", () => {
   });
 });
 
+it("triggers handlebuttonClick on button click", () => {
+  const mockErrorList = {
+    error_type: "CancelApplication",
+    errorList: {
+      application_reference: "APP12345",
+      errors: [{ detail: "Invalid input" }],
+    },
+    error_button: "Retry",
+  };
+
+  const mockHandleButtonClick = jest.fn();
+  const { getByText } = render(
+    <Provider store={store}>
+      <DynamicModel
+        errorList={mockErrorList}
+        handlebuttonClick={mockHandleButtonClick}
+      />
+    </Provider>
+  );
+
+  const button = getByText("Retry");
+  button.click();
+  expect(mockHandleButtonClick).toHaveBeenCalledTimes(1);
+});
+it("redirects to the appropriate URL on button click", () => {
+  delete window.location;
+  window.location = { href: "" };
+
+  const mockErrorList = {
+    error_type: "cancelResume",
+    errorList: {
+      errors: [],
+    },
+    error_button: "Resume",
+  };
+
+  render(
+    <Provider store={store}>
+      <DynamicModel errorList={mockErrorList} />
+    </Provider>
+  );
+
+  const button = document.querySelector(".btn");
+  button.click();
+
+  expect(window.location.href).toBe(process.env.REACT_APP_RESUME_URL);
+});
+
+
+jest.mock("dompurify", () => ({
+  sanitize: jest.fn((content) => content),
+}));
+
+it("sanitizes the content before rendering", () => {
+  const mockErrorList = {
+    errorList: {
+      errors: [{ detail: "<script>alert('XSS')</script>" }],
+    },
+  };
+
+  const { getByText } = render(
+    <Provider store={store}>
+      <DynamicModel errorList={mockErrorList} />
+    </Provider>
+  );
+
+  expect(getByText("Something went wrong!")).toBeInTheDocument();
+  expect(DOMPurify.sanitize).toHaveBeenCalledWith(
+    "<script>alert('XSS')</script>"
+  );
+});
+
+it("does not render if modelData is not provided", () => {
+  const { container } = render(
+    <Provider store={store}>
+      <DynamicModel errorList={null} />
+    </Provider>
+  );
+
+  expect(container.firstChild).toBeNull();
+});
+
+it("dispatches actions on default button click", () => {
+  const mockDispatch = jest.fn();
+  useDispatch.mockReturnValue(mockDispatch);
+
+  const mockErrorList = {
+    error_type: null,
+    errorList: {
+      errors: [],
+    },
+    error_button: "Retry",
+  };
+
+  const { getByText } = render(
+    <Provider store={store}>
+      <DynamicModel errorList={mockErrorList} />
+    </Provider>
+  );
+
+  const button = getByText("Retry");
+  button.click();
+
+  expect(mockDispatch).toHaveBeenCalledWith(dispatchLoader(false));
+  expect(mockDispatch).toHaveBeenCalledWith(errorAction.getExceptionList([]));
+});
+
