@@ -359,3 +359,147 @@ const PendingApplication = () => {
 };
 
 export default PendingApplication;
+
+
+
+import React from "react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { Provider } from "react-redux";
+import configureStore from "redux-mock-store";
+import { MemoryRouter } from "react-router-dom";
+import PendingApplication from "./pending-resume-application";
+import { dispatchLoader, resumeRequest, uploadRequest } from "../../../services/common-service";
+
+jest.mock("../../../services/common-service", () => ({
+  dispatchLoader: jest.fn(),
+  resumeRequest: jest.fn(),
+  uploadRequest: jest.fn(),
+}));
+
+jest.mock("react-redux", () => ({
+  useDispatch: jest.fn(),
+  useSelector: jest.fn(),
+}));
+
+jest.mock("react-router", () => ({
+  useNavigate: jest.fn(),
+}));
+
+describe("PendingApplication Component", () => {
+  const mockStore = configureStore();
+  const mockDispatch = jest.fn();
+  const mockNavigate = jest.fn();
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  const initialState = {
+    pendingApplication: {
+      pendingApplication: [
+        {
+          ProductName: "Test Product 1",
+          ApplicationRefNo: "12345",
+          ChannelRefNo: "02r-test",
+          Status: "WIP",
+          OnbSaveFlag: "Y",
+          ExpiryDate: "20240101.000000",
+        },
+        {
+          ProductName: "Test Product 2",
+          ApplicationRefNo: "67890",
+          ChannelRefNo: "03r-test",
+          Status: "PendingDocuments",
+          OnbSaveFlag: "N",
+          ExpiryDate: "20240105.000000",
+        },
+      ],
+    },
+  };
+
+  it("should render the PendingApplication component with applications", () => {
+    const store = mockStore(initialState);
+    render(
+      <Provider store={store}>
+        <MemoryRouter>
+          <PendingApplication />
+        </MemoryRouter>
+      </Provider>
+    );
+
+    expect(screen.getByText(/Here are your saved application/i)).toBeInTheDocument();
+    expect(screen.getByText("Test Product 1")).toBeInTheDocument();
+    expect(screen.getByText("Resume")).toBeInTheDocument();
+    expect(screen.getByText("Upload")).toBeInTheDocument();
+  });
+
+  it("should handle Resume button click", async () => {
+    const store = mockStore(initialState);
+    (resumeRequest as jest.Mock).mockResolvedValue({
+      application: {
+        journey_type: "test-journey",
+        stage: { page_id: "test-stage" },
+        referral_id_2: "test-referral",
+      },
+      applicants: [],
+    });
+
+    render(
+      <Provider store={store}>
+        <MemoryRouter>
+          <PendingApplication />
+        </MemoryRouter>
+      </Provider>
+    );
+
+    const resumeButton = screen.getAllByText("Resume")[0];
+    fireEvent.click(resumeButton);
+
+    await waitFor(() => {
+      expect(resumeRequest).toHaveBeenCalledWith("12345");
+      expect(dispatchLoader).toHaveBeenCalledWith(true);
+    });
+  });
+
+  it("should handle Upload button click", async () => {
+    const store = mockStore(initialState);
+    (uploadRequest as jest.Mock).mockResolvedValue({
+      applicants: [],
+    });
+
+    render(
+      <Provider store={store}>
+        <MemoryRouter>
+          <PendingApplication />
+        </MemoryRouter>
+      </Provider>
+    );
+
+    const uploadButton = screen.getAllByText("Upload")[0];
+    fireEvent.click(uploadButton);
+
+    await waitFor(() => {
+      expect(uploadRequest).toHaveBeenCalledWith("67890");
+      expect(dispatchLoader).toHaveBeenCalledWith(true);
+    });
+  });
+
+  it("should show a message when there are no pending applications", () => {
+    const emptyState = {
+      pendingApplication: {
+        pendingApplication: [],
+      },
+    };
+
+    const store = mockStore(emptyState);
+    render(
+      <Provider store={store}>
+        <MemoryRouter>
+          <PendingApplication />
+        </MemoryRouter>
+      </Provider>
+    );
+
+    expect(screen.getByText(/Sorry! there are no pending applications/i)).toBeInTheDocument();
+  });
+});
