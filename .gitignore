@@ -511,3 +511,18 @@ describe("PendingApplication Component", () => {
       17 |   );
       18 |   const [productDetails, setProductDetails] = useState();
       19 |   const [headerTitle, setHeaderTitle] = useState("");
+
+ TypeError: Cannot read properties of undefined (reading 'journeyType')
+
+      14 |   const stageSelector = useSelector((state: StoreModel) => state.stages);
+      15 |   const applicationJourney = useSelector(
+    > 16 |     (state: StoreModel) => state.stages.journeyType
+         |                                         ^
+      17 |   );
+      18 |   const [productDetails, setProductDetails] = useState();
+      19 |   const [headerTitle, setHeaderTitle] = useState("");
+
+      at journeyType (src/modules/dashboard/header/header.tsx:16:41)
+      at memoizedSelector (node_modules/use-sync-external-store/cjs/use-sync-external-store-shim/with-selector.development.js:79:30)
+      at getSnapshotWithSelector (node_modules/use-sync-external-store/cjs/use-sync-external-store-shim/with-selector.development.js:134:14)
+      at mountSyncExternalStore (node_modules/react-dom/cjs/react-dom.development.js:16799:20)
