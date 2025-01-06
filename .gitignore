@@ -1124,3 +1124,57 @@ export const DocumentUpload = (props: any) => {
 };
 
 export default DocumentUpload;
+
+import { render, screen } from "@testing-library/react";
+import { Provider } from "react-redux";
+import { store } from "../../../utils/store/store";
+import DocumentUpload from "./DocumentUpload";
+import * as changeUtils from "../../../utils/common/change.utils";
+import * as loaderSlice from "../../../utils/store/loader-slice";
+
+jest.mock("../../../utils/common/change.utils", () => ({
+  getUrl: {
+    getChannelRefNo: jest.fn(() => ({
+      channelRefNo: "testChannelRef",
+      applicationRefNo: "testApplicationRef",
+    })),
+    getParameterByName: jest.fn(() => "upload"),
+  },
+}));
+
+jest.mock("react-router-dom", () => ({
+  useNavigate: jest.fn(),
+}));
+
+jest.mock("../../../utils/store/loader-slice", () => ({
+  loaderAction: {
+    getState: jest.fn(),
+  },
+}));
+
+describe("DocumentUpload Component", () => {
+  test("should initialize state and call loader dispatch", () => {
+    const dispatchMock = jest.fn();
+    jest.spyOn(store, "dispatch").mockImplementation(dispatchMock);
+
+    render(
+      <Provider store={store}>
+        <DocumentUpload />
+      </Provider>
+    );
+
+    // Check if the loader action is dispatched
+    expect(dispatchMock).toHaveBeenCalledWith(
+      loaderSlice.loaderAction.getState({
+        isFetching: false,
+      })
+    );
+
+    // Check if getChannelRefNo and getParameterByName are called
+    expect(changeUtils.getUrl.getChannelRefNo).toHaveBeenCalled();
+    expect(changeUtils.getUrl.getParameterByName).toHaveBeenCalledWith("auth");
+
+    // Verify initial state setup
+    expect(screen.getByText(/Upload your/i)).toBeInTheDocument();
+  });
+});
