@@ -741,3 +741,52 @@ it("should show a message when there are no pending applications", () => {
   expect(mockDispatch).toHaveBeenCalledWith(expect.any(Function));
 });
 
+import { render, screen } from "@testing-library/react";
+import { useSelector, useDispatch } from "react-redux";
+import React from "react";
+import PendingApplication from "./PendingApplication"; // Adjust this to match your file structure
+import { MemoryRouter } from "react-router-dom";
+
+jest.mock("react-redux", () => ({
+  useDispatch: jest.fn(),
+  useSelector: jest.fn(),
+}));
+
+describe("PendingApplication Component", () => {
+  let mockDispatch: jest.Mock;
+
+  beforeEach(() => {
+    // Reset mocks before each test
+    jest.clearAllMocks();
+    mockDispatch = jest.fn();
+    (useDispatch as jest.Mock).mockReturnValue(mockDispatch);
+  });
+
+  it("should show a message when there are no pending applications", () => {
+    // Mock React's useState to set `setEmptyApplication` to `true`
+    jest.spyOn(React, "useState").mockImplementationOnce(() => [true, jest.fn()]);
+
+    // Mock `useSelector` to simulate empty pending applications
+    (useSelector as jest.Mock).mockImplementation((selectorFn) => {
+      if (selectorFn.toString().includes("state.pendingApplication")) {
+        return { pendingApplication: [] }; // Triggers the `else` block
+      }
+      return null;
+    });
+
+    render(
+      <MemoryRouter>
+        <PendingApplication />
+      </MemoryRouter>
+    );
+
+    // Check if the message about no applications is displayed
+    expect(
+      screen.getByText(/Sorry! there are no pending applications found to continue/i)
+    ).toBeInTheDocument();
+
+    // Verify dispatch is called for the loader
+    expect(mockDispatch).toHaveBeenCalledWith(expect.any(Function));
+  });
+});
+
