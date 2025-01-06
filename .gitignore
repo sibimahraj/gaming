@@ -206,3 +206,24 @@ Fields Component - Comprehensive Test Coverage
       237 |     }
 
       at src/modules/dashboard/fields/fields.tsx:234:8
+
+ if (dependencyFieldsSelector.workType) {
+      console.log("removedisibi", dispatch(
+        removeUserInput(
+          updateUserInputs,
+          dependencyFieldsSelector,
+          conditionalFieldSelector
+        )
+      ).then((updateUserInputsResponse: any) => {
+        setUserInputs(updateUserInputsResponse);
+      }))
+      dispatch(
+        removeUserInput(
+          updateUserInputs,
+          dependencyFieldsSelector,
+          conditionalFieldSelector
+        )
+      ).then((updateUserInputsResponse: any) => {
+        setUserInputs(updateUserInputsResponse);
+      });
+    }
