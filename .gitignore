@@ -1,1005 +1,113 @@
-import { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { KeyWithAnyModel, StoreModel } from "../../../utils/model/common-model";
-import "./alias.scss";
-import { getFields } from "./alias.utils";
-import renderComponent from "../../../modules/dashboard/fields/renderer";
-import { constant } from './constant';
-
-export const Alias = (props: KeyWithAnyModel) => {
-
-  const stageSelector = useSelector(
-    (state: StoreModel) => state.stages.stages
-  );
-
-  const journeyType = useSelector((state: StoreModel) => state.stages.journeyType);
-
-  const aliasSelector = useSelector(
-    (state: StoreModel) => state.alias
-  );
-
-  const dispatch = useDispatch();
-  const [field, setField] = useState([]);
-  const addNewAliasName = () => {
-    const stageComponents = dispatch(
-        getFields(stageSelector, aliasSelector, "add")
-    );
-    setField(stageComponents);
-  };
-
-  useEffect(() => {
-    if (stageSelector) {
-      const stageComponents = dispatch(
-        getFields(stageSelector, aliasSelector, "get")
-      );
-      setField(stageComponents);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [aliasSelector]);
-
-    return (
-        <>
-         {field &&
-          field.map((currentSection: KeyWithAnyModel, index: number) => {
-            return renderComponent(
-              currentSection,
-              index,
-              props.handleCallback,
-              props.handleFieldDispatch,
-              props.value
-            );
-          })}
-          { !journeyType && <div className="alias__buttton">
-          <div className="alias__plus">
-            <input
-              type={constant.type}
-              name={constant.name}
-              aria-label={constant.ariaLabel}
-              id={constant.id}
-              placeholder={constant.placeholder}
-              value={constant.value}
-              className ={(aliasSelector && aliasSelector.count < aliasSelector.maxCount) ? 'show-btn, button' : 'hide-btn'}
-              onClick={() => addNewAliasName()}
-            />
-            </div>
-          </div>}
-        </>
-    )
-}
-
-export default Alias;
-
 import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
-import { Provider } from "react-redux";
-import configureStore from "redux-mock-store";
-import { Alias } from "./alias";
-import * as utils from "./alias.utils";
-
-jest.mock("./alias.utils", () => ({
-  getFields: jest.fn(),
-}));
-
-jest.mock("../../../modules/dashboard/fields/renderer", () =>
-  jest.fn(() => <div data-testid="render-component">Render Component</div>)
-);
-
-const mockStore = configureStore([]);
-describe("Alias Component", () => {
-  let store: any;
-  const mockDispatch = jest.fn();
-  const mockProps = {
-    handleCallback: jest.fn(),
-    handleFieldDispatch: jest.fn(),
-    value: "testValue",
-  };
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-
-    // Initial Redux store mock
-    store = mockStore({
-      stages: {
-        stages: [
-          {
-            stageInfo: {
-              products: [{ name: "Product A" }],
-            },
-          },
-        ],
-        journeyType: false,
-      },
-      alias: {
-        count: 1,
-        maxCount: 5,
-      },
-    });
-
-    // Mock useDispatch
-    jest.spyOn(React, "useDispatch").mockReturnValue(mockDispatch);
-  });
-
-  it("should render the Alias component correctly", () => {
-    const mockedFields = [
-      { id: 1, fieldName: "Field1" },
-      { id: 2, fieldName: "Field2" },
-    ];
-    (utils.getFields as jest.Mock).mockReturnValue(mockedFields);
-
-    render(
-      <Provider store={store}>
-        <Alias {...mockProps} />
-      </Provider>
-    );
-
-    // Verify that renderComponent is called for each field
-    expect(screen.getAllByTestId("render-component").length).toBe(mockedFields.length);
-  });
-
-  it("should render the Add Alias button if journeyType is false", () => {
-    render(
-      <Provider store={store}>
-        <Alias {...mockProps} />
-      </Provider>
-    );
-
-    // Check if the button is visible
-    const addAliasButton = screen.getByPlaceholderText("Enter Alias");
-    expect(addAliasButton).toBeInTheDocument();
-    expect(addAliasButton).toHaveClass("show-btn, button");
-  });
-
-  it("should call addNewAliasName function when the Add Alias button is clicked", () => {
-    const mockedFields = [{ id: 1, fieldName: "Field1" }];
-    (utils.getFields as jest.Mock).mockReturnValue(mockedFields);
-
-    render(
-      <Provider store={store}>
-        <Alias {...mockProps} />
-      </Provider>
-    );
-
-    const addAliasButton = screen.getByPlaceholderText("Enter Alias");
-
-    fireEvent.click(addAliasButton);
-
-    // Verify dispatch and setField are called
-    expect(utils.getFields).toHaveBeenCalledWith(
-      store.getState().stages.stages,
-      store.getState().alias,
-      "add"
-    );
-    expect(mockDispatch).toHaveBeenCalled();
-  });
-
-  it("should not render Add Alias button if max count is reached", () => {
-    store = mockStore({
-      stages: {
-        stages: [
-          {
-            stageInfo: {
-              products: [{ name: "Product A" }],
-            },
-          },
-        ],
-        journeyType: false,
-      },
-      alias: {
-        count: 5,
-        maxCount: 5, // Max count reached
-      },
-    });
-
-    render(
-      <Provider store={store}>
-        <Alias {...mockProps} />
-      </Provider>
-    );
-
-    const addAliasButton = screen.queryByPlaceholderText("Enter Alias");
-
-    // Button should not be rendered
-    expect(addAliasButton).toBeNull();
-  });
-
-  it("should call getFields and update state when aliasSelector changes", () => {
-    const mockedFields = [{ id: 1, fieldName: "Field1" }];
-    (utils.getFields as jest.Mock).mockReturnValue(mockedFields);
-
-    render(
-      <Provider store={store}>
-        <Alias {...mockProps} />
-      </Provider>
-    );
-
-    // Check if getFields is called initially
-    expect(utils.getFields).toHaveBeenCalledWith(
-      store.getState().stages.stages,
-      store.getState().alias,
-      "get"
-    );
-    expect(mockDispatch).toHaveBeenCalled();
-  });
-
-  it("should render components returned by renderComponent", () => {
-    const mockedFields = [
-      { id: 1, fieldName: "Field1" },
-      { id: 2, fieldName: "Field2" },
-    ];
-    (utils.getFields as jest.Mock).mockReturnValue(mockedFields);
-
-    render(
-      <Provider store={store}>
-        <Alias {...mockProps} />
-      </Provider>
-    );
-
-    // Verify that renderComponent is called for each field
-    expect(screen.getAllByTestId("render-component").length).toBe(mockedFields.length);
-  });
-});
-
-
-
-import { render, screen, fireEvent } from "@testing-library/react";
-import { useDispatch, useSelector } from "react-redux";
-import ReviewPage from "./review-page";
-import reviewpageData from "../../../assets/_json/review.json";
-import { dispatchLoader, getProductCategory } from "../../../services/common-service";
-
-// Mock Redux hooks and external modules
-jest.mock("react-redux", () => ({
-  useDispatch: jest.fn(),
-  useSelector: jest.fn(),
-}));
-
-jest.mock("../../../services/common-service", () => ({
-  dispatchLoader: jest.fn(),
-  getProductCategory: jest.fn(),
-}));
-
-jest.mock("../../../shared/components/checkbox/checkbox", () => jest.fn((props) => (
-  <div data-testid="checkbox" onClick={() => props.setCheckedStatus(!props.checkedStatus)}>
-    Checkbox
-  </div>
-)));
-
-describe("ReviewPage Component", () => {
-  let mockDispatch: jest.Mock;
-  const mockStageSelector = [
-    {
-      stageInfo: {
-        products: [
-          {
-            name: "Test Product",
-          },
-        ],
-      },
-    },
-  ];
-
-  beforeEach(() => {
-    // Reset mocks
-    mockDispatch = jest.fn();
-    (useDispatch as jest.Mock).mockReturnValue(mockDispatch);
-    (useSelector as jest.Mock).mockReturnValue(mockStageSelector);
-    (getProductCategory as jest.Mock).mockReturnValue("CC");
-
-    jest.clearAllMocks();
-  });
-
-  it("should render ReviewPage with CCPL content", () => {
-    render(<ReviewPage />);
-
-    // Check CCPL content is rendered
-    expect(screen.getByText(reviewpageData.CCPL.reviewTitle1)).toBeInTheDocument();
-    
-
-    // Verify loader dispatch
-    expect(dispatchLoader).toHaveBeenCalledWith(false);
-  });
-
-it("should set product details and product category on mount", () => {
-    render(<ReviewPage />);
-
-   expect(getProductCategory).toHaveBeenCalledWith(mockStageSelector[0].stageInfo.products);
-                          
-    expect(screen.getByText(reviewpageData.CCPL.reviewTitle1)).toBeInTheDocument();
-  });
-
- it("should filter and render dynamic links for CCPL content", () => {
-    render(<ReviewPage />);
-    const links = reviewpageData.CCPLReviewContent.contentLink;
-    Object.entries(links).forEach(([key, value]) => {
-      expect(screen.getByText(/Customer Terms/)).toBeInTheDocument();
-    });
-  });
-it("should handle dispatch call when component mounts", () => {
-    render(<ReviewPage />);
-
-    // Verify dispatch call for loader
-    expect(mockDispatch).toHaveBeenCalledWith(undefined);
-  });
-
- });
-
-
-import { AppDispatch } from "../../../services/common-service";
-import { FindIndex } from "../../../utils/common/change.utils";
-import {
-  KeyWithAnyModel,
-  StageDetails,
-  aliasStoreModel
-} from "../../../utils/model/common-model";
-import { fieldErrorAction } from "../../../utils/store/field-error-slice";
-import { stagesAction } from "../../../utils/store/stages-slice";
-import { aliasAction } from "../../../utils/store/alias-slice";
-import { getUrl } from "../../../utils/common/change.utils";
-
-export const getFields = (
-  getStages: Array<StageDetails>,
-  aliasSelector: aliasStoreModel,
-  action: string
-): any => {
-  return (dispatch: AppDispatch) => {
-    const stageId = getStages[0].stageId === "ssf-1" ?  "bd-2": getStages[0].stageId;
-    const stageIndex =   FindIndex(getStages[0].stageInfo, stageId);
-    let fields: Array<KeyWithAnyModel> | undefined = getStages[0].stageInfo.fieldmetadata.data.stages[stageIndex === -1?0:"bd-2"].fields;
-    let newFileds: Array<KeyWithAnyModel> = [];
-    let newFieldsArray: Array<string> = [];
-    const journeyType = getUrl.getJourneyType();
-
-    let getClonedField = (logical_field_name: string) => {
-      if (fields) {
-        let field = fields.find(
-          fieldData => fieldData.logical_field_name === logical_field_name
-        );
-        if (field && field.logical_field_name) {
-          return { ...field };
-        } else {
-          return null;
-        }
-      } else {
-        return null;
-      }
-    };
-
-    const getSequence = () => {
-      for (let i = 1; i <= aliasSelector.maxCount; i++) {
-        let isItemFound = false;
-        aliasSelector.fields.forEach((field: string) => {
-          if (field && field.split("_")[1] === i.toString()) {
-            isItemFound = true;
-          }
-        });
-        if (!isItemFound) {
-          return i;
-        }
-      }
-    };
-
-    aliasSelector.fields.forEach((field: string) => {
-      let alias = getClonedField("alias");
-      if (field && alias) {
-        alias.logical_field_name = field;
-        alias.component_type = "Text";
-        alias.rwb_label_name = alias.rwb_label_name +' '+ field.split('_')[1];
-        if (journeyType) {
-          alias.hide_remove_btn = true;
-        }
-        newFileds.push(alias);
-        newFieldsArray.push(alias.logical_field_name);
-      }
-    });
-
-    if (newFieldsArray.length > 0) {
-      dispatch(fieldErrorAction.getMandatoryFields(newFieldsArray));
-      dispatch(
-        stagesAction.removeAddToggleField({
-          removeFields: [],
-          newFields: newFieldsArray,
-          value: ""
-        })
-      );
-    }
-
-    if (aliasSelector.count < aliasSelector.maxCount && action === "add") {
-      dispatch(aliasAction.updateCount(aliasSelector.count + 1));
-      let alias = getClonedField("alias");
-      if (alias) {
-        const seqNo = getSequence();
-        alias.logical_field_name = "alias_" + seqNo;
-        alias.component_type = "Text";
-        alias.rwb_label_name = alias.rwb_label_name +' '+ seqNo;
-        newFileds.push(alias);
-        dispatch(fieldErrorAction.getMandatoryFields([alias.logical_field_name]));
-        dispatch(aliasAction.addAliasField(alias.logical_field_name));
-        dispatch(
-          stagesAction.removeAddToggleField({
-            removeFields: [],
-            newFields: [alias.logical_field_name],
-            value: ""
-          })
-        );
-      }
-    }
-
-    return newFileds;
-  };
-};
-
-import { getFields } from "./your-file-path"; // Replace with your actual file path
-import { fieldErrorAction } from "../../../utils/store/field-error-slice";
-import { stagesAction } from "../../../utils/store/stages-slice";
-import { aliasAction } from "../../../utils/store/alias-slice";
-import { getUrl } from "../../../utils/common/change.utils";
-
-jest.mock("../../../utils/store/field-error-slice", () => ({
-  fieldErrorAction: {
-    getMandatoryFields: jest.fn(),
-  },
-}));
-
-jest.mock("../../../utils/store/stages-slice", () => ({
-  stagesAction: {
-    removeAddToggleField: jest.fn(),
-  },
-}));
-
-jest.mock("../../../utils/store/alias-slice", () => ({
-  aliasAction: {
-    updateCount: jest.fn(),
-    addAliasField: jest.fn(),
-  },
-}));
-
-jest.mock("../../../utils/common/change.utils", () => ({
-  FindIndex: jest.fn(() => 0),
-  getUrl: {
-    getJourneyType: jest.fn(() => true),
-  },
-}));
-
-describe("getFields", () => {
-  const mockDispatch = jest.fn();
-  const mockGetStages = [
-    {
-      stageId: "ssf-1",
-      stageInfo: {
-        fieldmetadata: {
-          data: {
-            stages: {
-              "bd-2": {
-                fields: [
-                  {
-                    logical_field_name: "alias",
-                    component_type: "Text",
-                    rwb_label_name: "Alias",
-                  },
-                ],
-              },
-            },
-          },
-        },
-      },
-    },
-  ];
-  const mockAliasSelector = {
-    fields: ["alias_1", "alias_2"],
-    count: 2,
-    maxCount: 5,
-  };
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it("should return newFields and dispatch actions correctly when action is 'add'", () => {
-    const action = "add";
-    const result = getFields(mockGetStages, mockAliasSelector, action)(mockDispatch);
-
-    expect(result).toHaveLength(3); // 2 existing aliases + 1 new alias
-    expect(fieldErrorAction.getMandatoryFields).toHaveBeenCalledTimes(2);
-    expect(stagesAction.removeAddToggleField).toHaveBeenCalledTimes(2);
-    expect(aliasAction.updateCount).toHaveBeenCalledWith(3); // Increment count
-    expect(aliasAction.addAliasField).toHaveBeenCalledWith("alias_3");
-    expect(mockDispatch).toHaveBeenCalledTimes(5); // Dispatch actions
-  });
-
-  it("should return newFields and dispatch actions correctly when action is not 'add'", () => {
-    const action = "remove";
-    const result = getFields(mockGetStages, mockAliasSelector, action)(mockDispatch);
-
-    expect(result).toHaveLength(2); // Only existing aliases
-    expect(fieldErrorAction.getMandatoryFields).toHaveBeenCalledTimes(1);
-    expect(stagesAction.removeAddToggleField).toHaveBeenCalledTimes(1);
-    expect(aliasAction.updateCount).not.toHaveBeenCalled(); // Count should not be updated
-    expect(aliasAction.addAliasField).not.toHaveBeenCalled();
-    expect(mockDispatch).toHaveBeenCalledTimes(2); // Dispatch actions
-  });
-
-  it("should handle missing fields gracefully", () => {
-    const mockGetStagesWithMissingFields = [
-      {
-        stageId: "ssf-1",
-        stageInfo: {
-          fieldmetadata: {
-            data: {
-              stages: {
-                "bd-2": {
-                  fields: [],
-                },
-              },
-            },
-          },
-        },
-      },
-    ];
-    const action = "add";
-    const result = getFields(mockGetStagesWithMissingFields, mockAliasSelector, action)(mockDispatch);
-
-    expect(result).toHaveLength(0); // No fields available
-    expect(fieldErrorAction.getMandatoryFields).not.toHaveBeenCalled();
-    expect(stagesAction.removeAddToggleField).not.toHaveBeenCalled();
-    expect(aliasAction.updateCount).not.toHaveBeenCalled();
-    expect(aliasAction.addAliasField).not.toHaveBeenCalled();
-    expect(mockDispatch).not.toHaveBeenCalled(); // No dispatch actions
-  });
-
-  it("should handle empty aliasSelector fields gracefully", () => {
-    const mockAliasSelectorEmptyFields = {
-      fields: [],
-      count: 0,
-      maxCount: 5,
-    };
-    const action = "add";
-    const result = getFields(mockGetStages, mockAliasSelectorEmptyFields, action)(mockDispatch);
-
-    expect(result).toHaveLength(1); // Only new alias added
-    expect(fieldErrorAction.getMandatoryFields).toHaveBeenCalledTimes(1);
-    expect(stagesAction.removeAddToggleField).toHaveBeenCalledTimes(1);
-    expect(aliasAction.updateCount).toHaveBeenCalledWith(1); // Increment count
-    expect(aliasAction.addAliasField).toHaveBeenCalledWith("alias_1");
-    expect(mockDispatch).toHaveBeenCalledTimes(3); // Dispatch actions
-  });
-});
-
-
-
-//review-page.tsx
-
-import "./review-page.scss";
+import "./model.scss";
 import { KeyWithAnyModel, StoreModel } from "../../../utils/model/common-model";
-import reviewpageData from "../../../assets/_json/review.json";
-import { authenticateType } from "../../../utils/common/change.utils";
-import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { errorAction } from "../../../utils/store/error-slice";
 import {
   dispatchLoader,
-  getProductCategory,
+  redirectingToIbanking,
 } from "../../../services/common-service";
-import Checkbox from "../../../shared/components/checkbox/checkbox";
-//import TooltipModel from "../../../shared/components/model/tooltip-model";
+import DOMPurify from "dompurify";
+import { getUrl } from "../../../utils/common/change.utils";
+import { Player } from "@lottiefiles/react-lottie-player";
+import lottieSrc from "../../../assets/_json/lottie/oops.json";
 
-const ReviewPage = (props: KeyWithAnyModel) => {
-  const dispatch = useDispatch();
+const DynamicModel = (props: KeyWithAnyModel) => {
+  const modelData = props.errorList;
   const stageSelector = useSelector((state: StoreModel) => state.stages.stages);
-  const reviewdata: KeyWithAnyModel = reviewpageData;
-  const [isTooltipOpen, setIsTooltipOpen] = useState(false);
-  const [isHideTooltipIcon, setIsHideTooltipIcon] = useState<boolean>(false);
-  const [isChecked, setIsChecked] = useState<boolean>(false);
-  // const rpAuthInfo =
-  //   authenticateType() === "myinfo" ? reviewdata.myinfo : reviewdata.manual;
-  const [productDetails, setProductDetails] = useState({
-    productName: "",
-  });
-  const [filterLinkList, setFilterLinkList] = useState([]);
-  const [productCategory, setProductCategory] = useState("");
-  useEffect(() => {
-    dispatch(dispatchLoader(false));
-    setProductDetails((prevValue) => {
+  const dispatch = useDispatch();
+  const handlebuttonClick = () => {
+    if (props.errorList.error_type === "CancelApplication" || props.errorList.error_type === "cancelResume") {
       if (
-        stageSelector &&
-        stageSelector[0].stageInfo &&
-        stageSelector[0].stageInfo.products.length >= 1
+        (getUrl.getParameterByName("SSCode") || (getUrl.getUpdatedStage().SScode != null && getUrl.getUpdatedStage().SScode !== "")|| getUrl.getParameterByName('transfer-token') ||  getUrl.getUpdatedStage().ccplChannel=== "IBK" || getUrl.getUpdatedStage().ccplChannel=== "MBNK") || 
+        (stageSelector && stageSelector[0] && stageSelector[0].stageInfo  && 
+          stageSelector[0].stageInfo.applicants && (stageSelector[0].stageInfo.applicants["auth_mode_a_1"] === "IX" || stageSelector[0].stageInfo.applicants["auth_mode_a_1"] === "IM"))
       ) {
-        prevValue.productName = stageSelector[0].stageInfo.products[0].name;
+        if (getUrl.getParameterByName("source") === "scm") {
+          //Ibanking redirection for app
+          window.location.href = `${process.env.REACT_APP_IBANKING_SC_MOBILE}`;
+        } else if(getUrl.getUpdatedStage().ccplChannel=== "MBNK" || getUrl.getParameterByName("channel") === "MBNK") {
+          const redirectUrl =  `${process.env.REACT_APP_IBANKING_SC_MOBILE_TRANSFER}`;
+          window.location.href = redirectUrl;
+        } else {
+          redirectingToIbanking();
+        }
+      } else {
+        if(props.errorList.error_type === "cancelResume"){
+          window.location.href = `${process.env.REACT_APP_RESUME_URL}`;
+        }else{
+          window.location.href = `${process.env.REACT_APP_HOME_PAGE_URL}`;
+        }
       }
-      return { ...prevValue };
-    });
-
-    const productCtg = getProductCategory(stageSelector[0].stageInfo.products);
-    setProductCategory(productCtg);
-    const checkProductCategory =
-      productCtg === "CA" || productCtg === "SA" ? true : false;
-    setIsHideTooltipIcon(checkProductCategory);
-    if (checkProductCategory === true) {
-      setIsChecked(true);
+    } else if (props.handlebuttonClick) {
+      props.handlebuttonClick();
+    } else {
+      dispatch(dispatchLoader(false));
+      dispatch(errorAction.getExceptionList([]));
     }
+  };
 
-    let reviewLinks =
-      productCtg === "PL" ? reviewdata.PLLinks : reviewdata.CCPLReviewContent;
-    const fliteredLink: any = Object.entries(reviewLinks.contentLink).filter(
-      (link: KeyWithAnyModel) => {
-        return link;
-      }
-    );
-    setFilterLinkList(fliteredLink);
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  // useEffect(() => {
-  //   if (isHideTooltipIcon) {
-  //     props.updateCheckboxStatus(true);
-  //   } else {
-  //     props.updateCheckboxStatus(isChecked);
-  //   }
-
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, [isChecked]);
+  const getMarkup = (content: any) => {
+    return {
+      __html: DOMPurify.sanitize(content),
+    };
+  };
 
   return (
     <>
-      {/* CASA begins
-      {productDetails && isHideTooltipIcon === true && (
-        <div className="field__group">
-          <div className="review__content">
-            <label className="review__content--header">
-              <p>{reviewdata.confirm.reviewPageHeader1}</p>
-            </label>
-            {rpAuthInfo.header && <label>{rpAuthInfo.header}</label>}
-            {rpAuthInfo.reviewDesc_1 && (
-              <div className="review__content--body">
-                <p>
-                  {rpAuthInfo.reviewDesc_1} {productDetails.productName}{" "}
-                  {rpAuthInfo.reviewDesc_2}
-                </p>
-              </div>
-            )}
-            {rpAuthInfo.reviewMyInfoDesc_1 && (
-              <div className="review__content--body">
-                {rpAuthInfo.reviewMyInfoDesc_1 && (
-                  <p>{rpAuthInfo.reviewMyInfoDesc_1}</p>
+      {modelData && modelData && (
+        <div className="popup">
+          <div className="popup__container">
+            <div className="waring__icon">
+              <Player src={lottieSrc} className="player" loop autoplay />
+            </div>
+            <div className="popup__info">
+              {modelData.error_header && (
+                <>
+                  {modelData.errorList &&
+                    modelData.errorList.application_reference && (
+                      <div className="app__ref">
+                        APPLICATION NO:{" "}
+                        {modelData.errorList.application_reference}
+                      </div>
+                    )}
+                  <div className="popup__info__head">
+                    {modelData.error_header}
+                  </div>
+                </>
+              )}
+              <div className="popup__info__desc">
+                {modelData.errorList.errors.map(
+                  (content: KeyWithAnyModel, index: number) => {
+                    return (
+                      <p key={`${content}${index}`}>
+                        {content.detail ? (
+                          <span
+                            dangerouslySetInnerHTML={getMarkup(content.detail)}
+                          />
+                        ) : (
+                          "Something went wrong!"
+                        )}
+                      </p>
+                    );
+                  }
                 )}
-                {rpAuthInfo.reviewMyInfoDesc_1 && (
-                  <ol type="a">
-                    <li>{rpAuthInfo.reviewMyInfoDesc_2}</li>
-                    <li>{rpAuthInfo.reviewMyInfoDesc_3}</li>
-                    <li>{rpAuthInfo.reviewMyInfoDesc_4}</li>
-                  </ol>
-                )}
-                {rpAuthInfo.reviewMyInfoDesc_5 && (
-                  <p>
-                    {rpAuthInfo.reviewMyInfoDesc_5} {productDetails.productName}{" "}
-                    {rpAuthInfo.reviewMyInfoDesc_6}
+                {modelData.error_button && (
+                  <p
+                    className="btn"
+                    onClick={() => handlebuttonClick()}
+                    key={`${modelData.error_button}`}
+                  >
+                    {modelData.error_button}
                   </p>
                 )}
               </div>
-            )}
-            <label>{reviewdata.confirm.reviewDesc}</label>
-            <div className="review__content--body">
-              <p>{reviewdata.confirm.reviewDesc_1}</p>
-              <ol>
-                <li>{reviewdata.confirm.reviewDesc_2}</li>
-                <li>{reviewdata.confirm.reviewDesc_3}</li>
-                <li>{reviewdata.confirm.reviewDesc_4}</li>
-              </ol>
-              <p>{reviewdata.confirm.reviewDesc_5}</p>
-              <p>{reviewdata.confirm.reviewDesc_6}</p>
-              <p>{reviewdata.confirm.reviewDesc_7}</p>
             </div>
           </div>
         </div>
-      )} */}
-      {/*CASA ends */}
-      {/*CCPL begins */}
-      {isHideTooltipIcon === false && (
-        <>
-          <div className="review__ccpl__content">
-            <div className="review__title">
-              <div className="review__title__label">
-              <p>{reviewdata.CCPL.reviewTitle1}</p>
-            </div>            
-            <div className="tool-tip__icon">
-              <div
-                className="tool-tip"
-                onClick={(event) =>
-                  setIsTooltipOpen(isTooltipOpen ? false : true)
-                }
-              ></div>
-            </div>             
-            </div>
-            {/* {productCategory === "PL" && (
-              <>
-                <div className="review__top__content">
-                  <div>{reviewdata.PLLinks.contentStart}</div>
-                  {filterLinkList.map((links: KeyWithAnyModel) => {
-                    return (
-                      <>
-                        <a
-                          target="_blank"
-                          rel="noreferrer"
-                          href={links[1].path}
-                        >
-                          {links[1].name},
-                        </a>
-                      </>
-                    );
-                  })}
-                  {reviewdata.CCPLReviewContent.contentLinkDescp}
-                </div>
-                <div className="review__top__content">
-                  {reviewdata.PL.reviewContent1}
-                </div>
-              </>
-            )} */}
-          </div>
-          <div className="review__checkbox">
-          <Checkbox
-              reviewHeader={reviewdata.CCPL.reviewHeader}
-              reviewDescp1={reviewdata.CCPL.reviewDescp1}
-              reviewDescpoint1={reviewdata.CCPL.reviewDescpoint1}
-              reviewDescpoint2={reviewdata.CCPL.reviewDescpoint2}
-              reviewDescp2={reviewdata.CCPL.reviewDescp2}
-              reviewDescp3={reviewdata.CCPL.reviewDescp3}
-              reviewDescp4={reviewdata.CCPL.reviewDescp4}
-              checkedStatus={isChecked}
-              setCheckedStatus={setIsChecked}
-            />                        
-          </div>
-          {productCategory === "CC" && (
-            <div className="review__ccpl__content">
-              <div className="review__content--header">
-                <label>{reviewdata.CCPLReviewContent.contentHeading}</label>
-              </div>
-              <div>
-                {reviewdata.CCPLReviewContent.contentStart}
-                {filterLinkList.map((links: KeyWithAnyModel) => {
-                  return (
-                    <>
-                      <a target="_blank" rel="noreferrer" href={links[1].path}>
-                        {links[1].name},
-                      </a>
-                    </>
-                  );
-                })}
-                {reviewdata.CCPLReviewContent.contentLinkDescp},
-                {reviewdata.CCPLReviewContent.contentEnd}
-              </div>
-            </div>
-          )}
-        </>
       )}
-      {/*CCPL ends */}
-      {/* {isTooltipOpen && (
-        <TooltipModel
-          isTooltipOpen={isTooltipOpen}
-          data="review"
-          setIsTooltipOpen={setIsTooltipOpen}
-          productCategory={productCategory}
-        />
-      )} */}
     </>
   );
 };
 
-export default ReviewPage;
-
-alias-utils.test
-
-import { getFields } from "./alias.utils";
-import { fieldErrorAction } from "../../../utils/store/field-error-slice";
-import { stagesAction } from "../../../utils/store/stages-slice";
-import { aliasAction } from "../../../utils/store/alias-slice";
-import { getUrl } from "../../../utils/common/change.utils";
-
-jest.mock("../../../utils/store/field-error-slice", () => ({
-  fieldErrorAction: {
-    getMandatoryFields: jest.fn(),
-  },
-}));
-
-jest.mock("../../../utils/store/stages-slice", () => ({
-  stagesAction: {
-    removeAddToggleField: jest.fn(),
-  },
-}));
-
-jest.mock("../../../utils/store/alias-slice", () => ({
-  aliasAction: {
-    updateCount: jest.fn(),
-    addAliasField: jest.fn(),
-  },
-}));
-
-jest.mock("../../../utils/common/change.utils", () => ({
-  FindIndex: jest.fn(() => 0),
-  getUrl: {
-    getJourneyType: jest.fn(() => true),
-  },
-}));
-
-describe("getFields", () => {
-  const mockDispatch = jest.fn();
-  const mockGetStages = [
-    {
-      stageId: "ssf-1",
-      stageInfo: {
-        fieldmetadata: {
-          data: {
-            stages: {
-              "bd-2": {
-                fields: [
-                  {
-                    logical_field_name: "alias",
-                    component_type: "Text",
-                    rwb_label_name: "Alias",
-                  },
-                ],
-              },
-            },
-          },
-        },
-      },
-    },
-  ];
-  const mockAliasSelector = {
-    fields: ["alias_1", "alias_2"],
-    count: 2,
-    maxCount: 5,
-  };
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it("should return newFields and dispatch actions correctly when action is 'add'", () => {
-    const action = "add";
-    const result = getFields(mockGetStages, mockAliasSelector, action)(mockDispatch);
-
-    expect(result).toHaveLength(3); // 2 existing aliases + 1 new alias
-    expect(fieldErrorAction.getMandatoryFields).toHaveBeenCalledTimes(2);
-    expect(stagesAction.removeAddToggleField).toHaveBeenCalledTimes(2);
-    expect(aliasAction.updateCount).toHaveBeenCalledWith(3); // Increment count
-    expect(aliasAction.addAliasField).toHaveBeenCalledWith("alias_3");
-    expect(mockDispatch).toHaveBeenCalledTimes(6); // Dispatch actions
-  });
-
-  it("should return newFields and dispatch actions correctly when action is not 'add'", () => {
-    const action = "remove";
-    const result = getFields(mockGetStages, mockAliasSelector, action)(mockDispatch);
-
-    expect(result).toHaveLength(2); // Only existing aliases
-    expect(fieldErrorAction.getMandatoryFields).toHaveBeenCalledTimes(1);
-    expect(stagesAction.removeAddToggleField).toHaveBeenCalledTimes(1);
-    expect(aliasAction.updateCount).not.toHaveBeenCalled(); // Count should not be updated
-    expect(aliasAction.addAliasField).not.toHaveBeenCalled();
-    expect(mockDispatch).toHaveBeenCalledTimes(2); // Dispatch actions
-  });
-
-  it("should handle missing fields gracefully", () => {
-    const mockGetStagesWithMissingFields = [
-      {
-        stageId: "ssf-1",
-        stageInfo: {
-          fieldmetadata: {
-            data: {
-              stages: {
-                "bd-2": {
-                  fields: [],
-                },
-              },
-            },
-          },
-        },
-      },
-    ];
-    const action = "add";
-    const result = getFields(mockGetStagesWithMissingFields, mockAliasSelector, action)(mockDispatch);
-
-
-  });
-
-  it("should handle empty aliasSelector fields gracefully", () => {
-    const mockAliasSelectorEmptyFields = {
-      fields: [],
-      count: 0,
-      maxCount: 5,
-    };
-    const action = "add";
-    const result = getFields(mockGetStages, mockAliasSelectorEmptyFields, action)(mockDispatch);
-
-    expect(result).toHaveLength(1); // Only new alias added
-    expect(fieldErrorAction.getMandatoryFields).toHaveBeenCalledTimes(1);
-    expect(stagesAction.removeAddToggleField).toHaveBeenCalledTimes(1);
-    expect(aliasAction.updateCount).toHaveBeenCalledWith(1); // Increment count
-    expect(aliasAction.addAliasField).toHaveBeenCalledWith("alias_1");
-    expect(mockDispatch).toHaveBeenCalledTimes(4); // Dispatch actions
-  });
-});
-
-//review-page.test.tsx
-
-import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
-import { useDispatch, useSelector } from "react-redux";
-import ReviewPage from "./review-page";
-import reviewpageData from "../../../assets/_json/review.json";
-import { dispatchLoader, getProductCategory } from "../../../services/common-service";
-
-// Mock Redux hooks and external modules
-jest.mock("react-redux", () => ({
-  useDispatch: jest.fn(),
-  useSelector: jest.fn(),
-}));
-
-jest.mock("../../../services/common-service", () => ({
-  dispatchLoader: jest.fn(),
-  getProductCategory: jest.fn(),
-}));
-
-jest.mock("../../../shared/components/checkbox/checkbox", () => jest.fn((props) => (
-  <div data-testid="checkbox" onClick={() => props.setCheckedStatus(!props.checkedStatus)}>
-    Checkbox
-  </div>
-)));
-
-describe("ReviewPage Component", () => {
-  let mockDispatch: jest.Mock;
-  const mockStageSelector = [
-    {
-      stageInfo: {
-        products: [
-          {
-            name: "Test Product",
-          },
-        ],
-      },
-    },
-  ];
-
-  beforeEach(() => {
-    // Reset mocks
-    mockDispatch = jest.fn();
-    (useDispatch as jest.Mock).mockReturnValue(mockDispatch);
-    (useSelector as jest.Mock).mockReturnValue(mockStageSelector);
-    (getProductCategory as jest.Mock).mockReturnValue("CC");
-
-    jest.clearAllMocks();
-  });
-
-  it("should render ReviewPage with CCPL content", () => {
-    render(<ReviewPage />);
-
-    // Check CCPL content is rendered
-    expect(screen.getByText(reviewpageData.CCPL.reviewTitle1)).toBeInTheDocument();
-    
-
-    // Verify loader dispatch
-    expect(dispatchLoader).toHaveBeenCalledWith(false);
-  });
-
-it("should set product details and product category on mount", () => {
-    render(<ReviewPage />);
-
-   expect(getProductCategory).toHaveBeenCalledWith(mockStageSelector[0].stageInfo.products);
-                          
-    expect(screen.getByText(reviewpageData.CCPL.reviewTitle1)).toBeInTheDocument();
-  });
-
- it("should filter and render dynamic links for CCPL content", () => {
-    render(<ReviewPage />);
-    const links = reviewpageData.CCPLReviewContent.contentLink;
-    Object.entries(links).forEach(([key, value]) => {
-      expect(screen.getByText(/Customer Terms/)).toBeInTheDocument();
-    });
-  });
-it("should handle dispatch call when component mounts", () => {
-    render(<ReviewPage />);
-
-    // Verify dispatch call for loader
-    expect(mockDispatch).toHaveBeenCalledWith(undefined);
-  });
-
- });
-
+export default DynamicModel;
