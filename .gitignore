@@ -112,3 +112,150 @@ const DynamicModel = (props: KeyWithAnyModel) => {
 
 export default DynamicModel;
 
+
+import React from "react";
+import { render } from "@testing-library/react";
+import { Provider } from "react-redux";
+import configureStore from "redux-mock-store";
+import { useDispatch } from "react-redux";
+import DOMPurify from "dompurify";
+import DynamicModel from "./DynamicModel";
+import { errorAction } from "../../../utils/store/error-slice";
+import { dispatchLoader } from "../../../services/common-service";
+
+jest.mock("dompurify", () => ({
+  sanitize: jest.fn((content) => content),
+}));
+
+jest.mock("../../../utils/store/error-slice", () => ({
+  errorAction: {
+    getExceptionList: jest.fn(),
+  },
+}));
+
+jest.mock("../../../services/common-service", () => ({
+  dispatchLoader: jest.fn(),
+}));
+
+const mockStore = configureStore([]);
+
+describe("DynamicModel Component - Combined Test Suite", () => {
+  let store;
+  let mockDispatch;
+
+  beforeEach(() => {
+    store = mockStore({
+      stages: {
+        stages: [
+          {
+            stageInfo: {
+              applicants: {
+                auth_mode_a_1: "IX",
+              },
+            },
+          },
+        ],
+      },
+    });
+
+    mockDispatch = jest.fn();
+    useDispatch.mockReturnValue(mockDispatch);
+  });
+
+  it("renders correctly, handles button click, and performs sanitization", () => {
+    // Mock props
+    const mockErrorList = {
+      error_type: "CancelApplication",
+      error_header: "Error occurred",
+      errorList: {
+        application_reference: "APP12345",
+        errors: [{ detail: "<script>alert('XSS')</script>" }],
+      },
+      error_button: "Retry",
+    };
+
+    // Mock global location object
+    delete window.location;
+    window.location = { href: "" };
+
+    const mockHandleButtonClick = jest.fn();
+
+    const { container, getByText, queryByText } = render(
+      <Provider store={store}>
+        <DynamicModel
+          errorList={mockErrorList}
+          handlebuttonClick={mockHandleButtonClick}
+        />
+      </Provider>
+    );
+
+    // Render tests
+    expect(getByText("Error occurred")).toBeInTheDocument();
+    expect(getByText("APPLICATION NO: APP12345")).toBeInTheDocument();
+    expect(getByText("Retry")).toBeInTheDocument();
+    expect(container).toBeTruthy();
+
+    // Button click test
+    const button = getByText("Retry");
+    button.click();
+    expect(mockHandleButtonClick).toHaveBeenCalledTimes(1);
+
+    // Redirection logic test
+    button.click();
+    expect(window.location.href).toBe("");
+
+    // Sanitization test
+    expect(DOMPurify.sanitize).toHaveBeenCalledWith(
+      "<script>alert('XSS')</script>"
+    );
+    expect(queryByText("Something went wrong!")).toBeNull();
+  });
+
+  it("dispatches actions when no handlebuttonClick is provided", () => {
+    const mockErrorList = {
+      error_type: null,
+      errorList: {
+        errors: [],
+      },
+      error_button: "Retry",
+    };
+
+    const { getByText } = render(
+      <Provider store={store}>
+        <DynamicModel errorList={mockErrorList} />
+      </Provider>
+    );
+
+    const button = getByText("Retry");
+    button.click();
+
+    expect(mockDispatch).toHaveBeenCalledWith(dispatchLoader(false));
+    expect(mockDispatch).toHaveBeenCalledWith(errorAction.getExceptionList([]));
+  });
+
+  it("handles missing properties gracefully", () => {
+    const mockErrorList = {
+      error_header: null,
+      errorList: null,
+    };
+
+    const { container } = render(
+      <Provider store={store}>
+        <DynamicModel errorList={mockErrorList} />
+      </Provider>
+    );
+
+    expect(container).toBeTruthy();
+  });
+
+  it("does not render if modelData is not provided", () => {
+    const { container } = render(
+      <Provider store={store}>
+        <DynamicModel errorList={null} />
+      </Provider>
+    );
+
+    expect(container.firstChild).toBeNull();
+  });
+});
+
