@@ -687,3 +687,20 @@ describe("ThankYou Component - useEffect Logic", () => {
   });
 });
 
+expect(received).toHaveBeenCalledWith(...expected)
+
+    Matcher error: received value must be a mock or spy function
+
+    Received has type:  function
+    Received has value: [Function anonymous]
+
+      231 |
+      232 |     // Verify GA pageView
+    > 233 |     expect(gaTrackEvents.pageView).toHaveBeenCalledWith("Stage1");
+          |                                    ^
+      234 |
+      235 |     // Verify Adobe event
+      236 |     expect(trackEvents.triggerAdobeEvent).toHaveBeenCalledWith("formSubmit");
+
+      at Object.toHaveBeenCalledWith (src/modules/dashboard/thank-you/thank-you.test.tsx:233:36)
+
