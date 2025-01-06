@@ -460,3 +460,230 @@ const ThankYou = () => {
 
 export default ThankYou;
 
+
+import React from "react";
+import { render } from "@testing-library/react";
+import { Provider } from "react-redux";
+import configureStore from "redux-mock-store";
+import ThankYou from "./thank-you";
+import * as gaTrackEvents from "../../../services/analytics-service";
+import * as trackEvents from "../../../services/adobe-service";
+import * as changeUtils from "../../../utils/common/change.utils";
+
+jest.mock("../../../services/analytics-service");
+jest.mock("../../../services/adobe-service");
+
+const mockStore = configureStore([]);
+
+describe("ThankYou Component - useEffect Logic", () => {
+  let store: any;
+
+  beforeEach(() => {
+    store = mockStore({
+      stages: {
+        stages: [
+          {
+            stageId: "Stage1",
+            stageInfo: {
+              products: [
+                {
+                  product_category: "CC",
+                  name: "Credit Card",
+                  product_sequence_number: 1,
+                  product_type: "Type1",
+                  acct_details: [
+                    { account_number: "12345678", card_no: "9876543210" },
+                  ],
+                },
+              ],
+              applicants: {
+                embossed_name_a_1: "John Doe",
+                loan_tenor_a_1: 24,
+                required_loan_amount_a_1: 50000,
+                auth_mode_a_1: "IX",
+              },
+            },
+          },
+        ],
+        isDocumentUpload: false,
+        journeyType: "MockJourney",
+      },
+      thankyouDetails: {
+        applicationDetails: {
+          isStp: false,
+        },
+      },
+    });
+
+    jest.spyOn(changeUtils.getUrl, "getParameterByName").mockImplementation((param) => {
+      if (param === "auth") return "upload";
+      return null;
+    });
+  });
+
+  it("should set STP application details correctly for Credit Card (CC)", () => {
+    const { container } = render(
+      <Provider store={store}>
+        <ThankYou />
+      </Provider>
+    );
+
+    expect(container).toBeTruthy();
+
+    // Verify GA pageView is triggered
+    expect(gaTrackEvents.pageView).toHaveBeenCalledWith("Stage1");
+
+    // Verify Adobe event is not triggered because `auth=upload`
+    expect(trackEvents.triggerAdobeEvent).not.toHaveBeenCalled();
+  });
+
+  it("should handle product details and enable activation for Personal Loan (PL)", () => {
+    store = mockStore({
+      stages: {
+        stages: [
+          {
+            stageId: "Stage1",
+            stageInfo: {
+              products: [
+                {
+                  product_category: "PL",
+                  name: "Personal Loan",
+                  product_sequence_number: 1,
+                  product_type: "Type1",
+                  offer_details: [
+                    { fees: [{ fee_amount: 100 }] },
+                  ],
+                  acct_details: [{}],
+                  campaign: "Campaign1",
+                },
+              ],
+              applicants: {
+                loan_tenor_a_1: 24,
+                required_loan_amount_a_1: 50000,
+                auth_mode_a_1: "IX",
+              },
+            },
+          },
+        ],
+        isDocumentUpload: false,
+        journeyType: "NTB",
+      },
+      thankyouDetails: {
+        applicationDetails: {
+          isStp: false,
+        },
+      },
+    });
+
+    render(
+      <Provider store={store}>
+        <ThankYou />
+      </Provider>
+    );
+
+    // Verify GA pageView
+    expect(gaTrackEvents.pageView).toHaveBeenCalledWith("Stage1");
+
+    // Verify Adobe event is not triggered because `auth=upload`
+    expect(trackEvents.triggerAdobeEvent).not.toHaveBeenCalled();
+  });
+
+  it("should trigger Adobe event when auth is not 'upload' and document upload is false", () => {
+    jest.spyOn(changeUtils.getUrl, "getParameterByName").mockImplementation((param) => {
+      if (param === "auth") return "not-upload";
+      return null;
+    });
+
+    store = mockStore({
+      stages: {
+        stages: [
+          {
+            stageId: "Stage1",
+            stageInfo: {
+              products: [],
+              applicants: {},
+            },
+          },
+        ],
+        isDocumentUpload: false,
+        journeyType: "MockJourney",
+      },
+    });
+
+    render(
+      <Provider store={store}>
+        <ThankYou />
+      </Provider>
+    );
+
+    // Verify Adobe event is triggered
+    expect(trackEvents.triggerAdobeEvent).toHaveBeenCalledWith("formSubmit");
+  });
+
+  it("should handle missing or empty product and applicant details gracefully", () => {
+    store = mockStore({
+      stages: {
+        stages: [
+          {
+            stageId: "Stage1",
+            stageInfo: {
+              products: [],
+              applicants: {},
+            },
+          },
+        ],
+        isDocumentUpload: false,
+        journeyType: "MockJourney",
+      },
+    });
+
+    render(
+      <Provider store={store}>
+        <ThankYou />
+      </Provider>
+    );
+
+    // Verify GA pageView
+    expect(gaTrackEvents.pageView).toHaveBeenCalledWith("Stage1");
+
+    // Verify Adobe event is triggered
+    expect(trackEvents.triggerAdobeEvent).toHaveBeenCalledWith("formSubmit");
+  });
+
+  it("should handle multiple products and campaigns correctly", () => {
+    store = mockStore({
+      stages: {
+        stages: [
+          {
+            stageId: "Stage1",
+            stageInfo: {
+              products: [
+                {
+                  product_category: "PL",
+                  campaign: "FeeFreeCampaign",
+                  acct_details: [{}, {}],
+                },
+              ],
+              applicants: {},
+            },
+          },
+        ],
+        isDocumentUpload: false,
+        journeyType: "MockJourney",
+      },
+    });
+
+    render(
+      <Provider store={store}>
+        <ThankYou />
+      </Provider>
+    );
+
+    // Verify GA pageView
+    expect(gaTrackEvents.pageView).toHaveBeenCalledWith("Stage1");
+
+    // Verify Adobe event
+    expect(trackEvents.triggerAdobeEvent).toHaveBeenCalledWith("formSubmit");
+  });
+});
+
