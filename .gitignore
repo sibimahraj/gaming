@@ -189,3 +189,20 @@ describe("Fields Component - Comprehensive Test Coverage", () => {
 
   
 });
+
+Fields Component - Comprehensive Test Coverage
+    × renders correctly and initializes with default state (168 ms)
+
+  ● Fields Component - Comprehensive Test Coverage › renders correctly and initializes with default state
+
+    TypeError: Cannot read properties of undefined (reading 'then')
+
+      232 |           conditionalFieldSelector
+      233 |         )
+    > 234 |       ).then((updateUserInputsResponse: any) => {
+          |        ^
+      235 |         setUserInputs(updateUserInputsResponse);
+      236 |       });
+      237 |     }
+
+      at src/modules/dashboard/fields/fields.tsx:234:8
