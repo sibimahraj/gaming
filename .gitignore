@@ -1178,3 +1178,91 @@ describe("DocumentUpload Component", () => {
     expect(screen.getByText(/Upload your/i)).toBeInTheDocument();
   });
 });
+
+
+import React from "react";
+import { render, screen } from "@testing-library/react";
+import { Provider } from "react-redux";
+import configureStore from "redux-mock-store";
+import { DocumentUpload } from "./document-upload";
+import { getUrl } from "../../../utils/common/change.utils";
+import { store } from "../../../utils/store/store";
+
+// Mock dependencies
+jest.mock("../../../utils/common/change.utils", () => ({
+  getUrl: {
+    getChannelRefNo: jest.fn(),
+    getParameterByName: jest.fn(),
+  },
+}));
+
+jest.mock("../../../utils/store/document-slice", () => ({
+  documentUploadAction: {
+    getDocumentList: jest.fn(),
+    isDocumentUpdate: jest.fn(),
+  },
+}));
+
+jest.mock("../../../services/track-events", () => ({
+  triggerAdobeEvent: jest.fn(),
+}));
+
+describe("DocumentUpload Component", () => {
+  const mockStore = configureStore();
+  let initialState: any;
+  let testStore: any;
+
+  beforeEach(() => {
+    // Set up initial state for the Redux store
+    initialState = {
+      documentUploadList: { responseDocuments: [] },
+      valueUpdate: {},
+      stages: { journeyType: "test", isDocumentUpload: false },
+    };
+    testStore = mockStore(initialState);
+
+    // Mock URL parameters
+    getUrl.getChannelRefNo.mockReturnValue({
+      channelRefNo: "12345",
+      applicationRefNo: "54321",
+    });
+    getUrl.getParameterByName.mockReturnValue("upload");
+  });
+
+  it("should render the DocumentUpload component and initialize state", () => {
+    render(
+      <Provider store={testStore}>
+        <DocumentUpload />
+      </Provider>
+    );
+
+    // Assertions
+    expect(screen.getByText("Upload your document")).toBeInTheDocument();
+    expect(getUrl.getChannelRefNo).toHaveBeenCalled();
+    expect(getUrl.getParameterByName).toHaveBeenCalledWith("auth");
+  });
+
+  it("should set uploadEnable to true if auth parameter is 'upload'", () => {
+    render(
+      <Provider store={testStore}>
+        <DocumentUpload />
+      </Provider>
+    );
+
+    // Assertions for uploadEnable state
+    expect(testStore.getState().stages.isDocumentUpload).toBe(false);
+    expect(getUrl.getParameterByName).toHaveBeenCalledWith("auth");
+  });
+
+  it("should dispatch actions to initialize loader and document state", () => {
+    render(
+      <Provider store={testStore}>
+        <DocumentUpload />
+      </Provider>
+    );
+
+    // Check dispatch calls
+    const actions = testStore.getActions();
+    expect(actions.some((action: any) => action.type.includes("loaderAction"))).toBeTruthy();
+  });
+});
