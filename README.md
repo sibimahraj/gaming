@@ -551,3 +551,145 @@ export const getFields = (
   return newFileds;
   };
 };
+
+import { getFields } from "./tax.utils";
+import { fieldErrorAction } from "../../utils/store/field-error-slice";
+import { stagesAction } from "../../utils/store/stages-slice";
+import { getUrl } from "../../utils/common/change.utils";
+
+jest.mock("../../utils/store/field-error-slice", () => ({
+  fieldErrorAction: {
+    getMandatoryFields: jest.fn(),
+  },
+}));
+
+jest.mock("../../utils/store/stages-slice", () => ({
+  stagesAction: {
+    removeAddToggleField: jest.fn(),
+  },
+}));
+
+jest.mock("../../utils/common/change.utils", () => ({
+  FindIndex: jest.fn(() => 0),
+  getUrl: {
+    getJourneyType: jest.fn(() => true),
+  },
+}));
+
+describe("getFields", () => {
+  const mockDispatch = jest.fn();
+  const mockGetStages = [
+    {
+      stageId: "stage-1",
+      stageInfo: {
+        fieldmetadata: {
+          data: {
+            stages: [
+              {
+                stageId: "stage-3",
+                fields: [
+                  {
+                    logical_field_name: "no_of_tax_residency_country",
+                    component_type: "Text",
+                    rwb_label_name: "Number of Tax Residency Countries",
+                  },
+                ],
+              },
+            ],
+          },
+        },
+      },
+    },
+  ];
+
+  const mockTaxSelector = {
+    fields: ["tax_field_1", "tax_field_2"],
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("should return newFields and dispatch actions correctly when action is 'add'", () => {
+    const action = "add";
+    const result = getFields(mockGetStages, mockTaxSelector, action)(mockDispatch);
+
+    expect(result).toHaveLength(2); // Corresponding to `mockTaxSelector.fields`
+    expect(fieldErrorAction.getMandatoryFields).toHaveBeenCalledWith([
+      "tax_field_1",
+      "tax_field_2",
+    ]);
+    expect(stagesAction.removeAddToggleField).toHaveBeenCalledWith({
+      removeFields: [],
+      newFields: ["tax_field_1", "tax_field_2"],
+      value: "",
+    });
+    expect(mockDispatch).toHaveBeenCalledTimes(2); // Dispatching actions
+  });
+
+  it("should return newFields and not dispatch actions if no fields are found", () => {
+    const mockEmptyStages = [
+      {
+        stageId: "stage-1",
+        stageInfo: {
+          fieldmetadata: {
+            data: {
+              stages: [
+                {
+                  stageId: "stage-3",
+                  fields: [],
+                },
+              ],
+            },
+          },
+        },
+      },
+    ];
+
+    const action = "add";
+    const result = getFields(mockEmptyStages, mockTaxSelector, action)(mockDispatch);
+
+    expect(result).toHaveLength(0); // No fields to process
+    expect(fieldErrorAction.getMandatoryFields).not.toHaveBeenCalled();
+    expect(stagesAction.removeAddToggleField).not.toHaveBeenCalled();
+    expect(mockDispatch).not.toHaveBeenCalled();
+  });
+
+  it("should handle an empty taxSelector.fields gracefully", () => {
+    const mockEmptyTaxSelector = {
+      fields: [],
+    };
+
+    const action = "add";
+    const result = getFields(mockGetStages, mockEmptyTaxSelector, action)(mockDispatch);
+
+    expect(result).toHaveLength(0); // No new fields
+    expect(fieldErrorAction.getMandatoryFields).not.toHaveBeenCalled();
+    expect(stagesAction.removeAddToggleField).not.toHaveBeenCalled();
+    expect(mockDispatch).not.toHaveBeenCalled();
+  });
+
+  it("should clone fields and modify them based on conditions", () => {
+    getUrl.getJourneyType.mockReturnValue(false);
+
+    const action = "add";
+    const result = getFields(mockGetStages, mockTaxSelector, action)(mockDispatch);
+
+    expect(result[0]).toEqual(
+      expect.objectContaining({
+        logical_field_name: "tax_field_1",
+        component_type: "Selection Box",
+        rwb_label_name: "No. of Tax Residency Country",
+        hide_remove_btn: false,
+      })
+    );
+    expect(result[1]).toEqual(
+      expect.objectContaining({
+        logical_field_name: "tax_field_2",
+        component_type: "Selection Box",
+        rwb_label_name: "No. of Tax Residency Country",
+        hide_remove_btn: false,
+      })
+    );
+  });
+});
