@@ -359,3 +359,195 @@ describe('Tax Component', () => {
     expect(mockGetFields).toHaveBeenCalled();
   });
 });
+
+import { getFields } from "./alias.utils";
+import { fieldErrorAction } from "../../../utils/store/field-error-slice";
+import { stagesAction } from "../../../utils/store/stages-slice";
+import { aliasAction } from "../../../utils/store/alias-slice";
+import { getUrl } from "../../../utils/common/change.utils";
+ 
+jest.mock("../../../utils/store/field-error-slice", () => ({
+  fieldErrorAction: {
+    getMandatoryFields: jest.fn(),
+  },
+}));
+ 
+jest.mock("../../../utils/store/stages-slice", () => ({
+  stagesAction: {
+    removeAddToggleField: jest.fn(),
+  },
+}));
+ 
+jest.mock("../../../utils/store/alias-slice", () => ({
+  aliasAction: {
+    updateCount: jest.fn(),
+    addAliasField: jest.fn(),
+  },
+}));
+ 
+jest.mock("../../../utils/common/change.utils", () => ({
+  FindIndex: jest.fn(() => 0),
+  getUrl: {
+    getJourneyType: jest.fn(() => true),
+  },
+}));
+ 
+describe("getFields", () => {
+  const mockDispatch = jest.fn();
+  const mockGetStages = [
+    {
+      stageId: "ssf-1",
+      stageInfo: {
+        fieldmetadata: {
+          data: {
+            stages: [{
+              stageId:'bd-2',
+                fields: [
+                  {
+                    logical_field_name: "alias",
+                    component_type: "Text",
+                    rwb_label_name: "Alias",
+                  },
+                ],
+              }],
+          },
+        },
+      },
+    },
+  ];
+  const mockAliasSelector = {
+    fields: ["alias_1", "alias_2"],
+    count: 2,
+    maxCount: 5,
+  };
+ 
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+ 
+  it("should return newFields and dispatch actions correctly when action is 'add'", () => {
+    const action = "add";
+    const result = getFields(mockGetStages, mockAliasSelector, action)(mockDispatch);
+ 
+    expect(result).toHaveLength(3); // 2 existing aliases + 1 new alias
+    expect(fieldErrorAction.getMandatoryFields).toHaveBeenCalledTimes(2);
+    expect(stagesAction.removeAddToggleField).toHaveBeenCalledTimes(2);
+    expect(aliasAction.updateCount).toHaveBeenCalledWith(3); // Increment count
+    expect(aliasAction.addAliasField).toHaveBeenCalledWith("alias_3");
+    expect(mockDispatch).toHaveBeenCalledTimes(6); // Dispatch actions
+  });
+ 
+  it("should return newFields and dispatch actions correctly when action is not 'add'", () => {
+    const action = "remove";
+    const result = getFields(mockGetStages, mockAliasSelector, action)(mockDispatch);
+ 
+    expect(result).toHaveLength(2); // Only existing aliases
+    expect(fieldErrorAction.getMandatoryFields).toHaveBeenCalledTimes(1);
+    expect(stagesAction.removeAddToggleField).toHaveBeenCalledTimes(1);
+    expect(aliasAction.updateCount).not.toHaveBeenCalled(); // Count should not be updated
+    expect(aliasAction.addAliasField).not.toHaveBeenCalled();
+    expect(mockDispatch).toHaveBeenCalledTimes(2); // Dispatch actions
+  });
+ 
+  it("should handle missing fields gracefully", () => {
+    const mockGetStagesWithMissingFields = [
+      {
+        stageId: "ssf-1",
+        stageInfo: {
+          fieldmetadata: {
+            data: {
+              stages: [{
+                stageId:'bd-2',
+                  fields: [],
+                }],
+            },
+          },
+        },
+      },
+    ];
+    const action = "add";
+    const result = getFields(mockGetStagesWithMissingFields, mockAliasSelector, action)(mockDispatch);
+ 
+ 
+  });
+ 
+  it("should handle empty aliasSelector fields gracefully", () => {
+    const mockAliasSelectorEmptyFields = {
+      fields: [],
+      count: 0,
+      maxCount: 5,
+    };
+    const action = "add";
+    const result = getFields(mockGetStages, mockAliasSelectorEmptyFields, action)(mockDispatch);
+ 
+    expect(result).toHaveLength(1); // Only new alias added
+    expect(fieldErrorAction.getMandatoryFields).toHaveBeenCalledTimes(1);
+    expect(stagesAction.removeAddToggleField).toHaveBeenCalledTimes(1);
+    expect(aliasAction.updateCount).toHaveBeenCalledWith(1); // Increment count
+    expect(aliasAction.addAliasField).toHaveBeenCalledWith("alias_1");
+    expect(mockDispatch).toHaveBeenCalledTimes(4); // Dispatch actions
+  });
+});
+ 
+import { AppDispatch } from "../../services/common-service";
+import { FindIndex } from "../../utils/common/change.utils";
+import { KeyWithAnyModel,StageDetails,taxStoreModel } from "../../utils/model/common-model";
+import { fieldErrorAction } from "../../utils/store/field-error-slice";
+import { stagesAction } from "../../utils/store/stages-slice";
+import { taxAction } from "../../utils/store/tax-slice";
+import { getUrl } from "../../utils/common/change.utils";
+
+export const getFields = (
+  getStages: Array<StageDetails>,
+  taxSelector: taxStoreModel,
+  action: string
+): any => {
+  return (dispatch: AppDispatch) => {
+    let fields: Array<KeyWithAnyModel> | undefined = getStages[0].stageInfo.fieldmetadata.data.stages[2].fields;
+    let newFileds: Array<KeyWithAnyModel> = [];
+    let newFieldsArray: Array<string> = [];
+    const journeyType = getUrl.getJourneyType();
+
+    let getClonedField = (logical_field_name: string) => {
+      if (fields) {
+        let field = fields.find(
+          fieldData => fieldData.logical_field_name === logical_field_name
+        );
+        if (field && field.logical_field_name) {
+          return { ...field };
+        } else {
+          return null;
+        }
+      } else {
+        return null;
+      }
+    };
+
+    taxSelector.fields.forEach((field: string) => {
+        
+      let no_of_tax_residency_country = getClonedField("no_of_tax_residency_country");
+      if (field && no_of_tax_residency_country) {
+        no_of_tax_residency_country.logical_field_name = field;
+        no_of_tax_residency_country.component_type = "Selection Box";
+        no_of_tax_residency_country.rwb_label_name = "No. of Tax Residency Country";
+        if (journeyType) {
+            no_of_tax_residency_country.hide_remove_btn = true;
+        }
+        newFileds.push(no_of_tax_residency_country);
+        newFieldsArray.push(no_of_tax_residency_country.logical_field_name);
+      }
+    });
+
+    if (newFieldsArray.length > 0) {
+      dispatch(fieldErrorAction.getMandatoryFields(newFieldsArray));
+      dispatch(
+        stagesAction.removeAddToggleField({
+          removeFields: [],
+          newFields: newFieldsArray,
+          value: ""
+        })
+      );
+    }
+  return newFileds;
+  };
+};
