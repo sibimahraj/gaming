@@ -209,3 +209,153 @@ export const Tax = (props: KeyWithAnyModel) => {
 }
 
 export default Tax;
+
+import { render, screen, fireEvent } from '@testing-library/react';
+import { useDispatch, useSelector } from 'react-redux';
+import Tax from './tax';
+import { getFields } from './tax.utils';
+import React from 'react';
+
+jest.autoMockOff();
+jest.mock('react-redux', () => ({
+  useDispatch: jest.fn(),
+  useSelector: jest.fn(),
+}));
+
+jest.mock('./tax.utils', () => ({
+  getFields: jest.fn(),
+}));
+
+describe('Tax Component', () => {
+  const mockDispatch = jest.fn(() => [
+    {
+      fieldId: 'tax-1',
+      fieldData: {
+        logical_field_name: 'taxDetails',
+        component_type: 'Dropdown',
+        rwb_label_name: 'Tax Details',
+      },
+    },
+  ]);
+  const mockGetFields = jest.fn();
+
+  beforeEach(() => {
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    jest.clearAllMocks();
+    (useDispatch as jest.Mock).mockReturnValue(mockDispatch);
+    jest.spyOn(React, 'useState').mockImplementationOnce(() => [
+      [
+        {
+          logical_field_name: 'tax_1',
+          lov_field_name: 'Tax Details',
+          rwb_label_name: 'Tax Info',
+          field_set: 'Yes',
+          field_set_name: 'Financial Details',
+          component_type: 'Dropdown',
+          mandatory: 'Yes',
+        },
+      ],
+      jest.fn(),
+    ]);
+    (getFields as jest.Mock).mockImplementation(mockGetFields);
+  });
+
+  it('should call getFields on initial render with "get" action', () => {
+    (useSelector as jest.Mock).mockImplementation((selectorFn) => {
+      if (selectorFn.toString().includes('state.stages.stages')) {
+        return [
+          {
+            stageId: 'tx-1',
+            stageInfo: {
+              fieldmetadata: {
+                data: {
+                  stages: {
+                    'tx-1': {
+                      fields: [
+                        {
+                          logical_field_name: 'taxDetails',
+                          component_type: 'Dropdown',
+                          rwb_label_name: 'Tax Details',
+                        },
+                      ],
+                    },
+                  },
+                },
+              },
+            },
+          },
+        ];
+      }
+      if (selectorFn.toString().includes('state.tax')) {
+        return { count: 1, fields: ['tax_1'], maxCount: 3 };
+      }
+      if (selectorFn.toString().includes('state.stages.journeyType')) {
+        return 'business';
+      }
+      return null;
+    });
+
+    render(
+      <Tax
+        handleCallback={jest.fn()}
+        handleFieldDispatch={jest.fn()}
+        value={{
+          taxCategory: '',
+          annualIncome: '',
+        }}
+      />
+    );
+
+    expect(mockDispatch).toHaveBeenCalled();
+    expect(mockGetFields).toHaveBeenCalled();
+  });
+
+  it('should render fields based on state and allow user interaction', () => {
+    (useSelector as jest.Mock).mockImplementation((selectorFn) => {
+      if (selectorFn.toString().includes('state.stages.stages')) {
+        return [
+          {
+            stageId: 'tx-1',
+            stageInfo: {
+              fieldmetadata: {
+                data: {
+                  stages: {
+                    'tx-1': {
+                      fields: [
+                        {
+                          logical_field_name: 'taxDetails',
+                          component_type: 'Dropdown',
+                          rwb_label_name: 'Tax Details',
+                        },
+                      ],
+                    },
+                  },
+                },
+              },
+            },
+          },
+        ];
+      }
+      if (selectorFn.toString().includes('state.tax')) {
+        return { count: 1, fields: ['tax_1'], maxCount: 3 };
+      }
+      return null;
+    });
+
+    render(
+      <Tax
+        handleCallback={jest.fn()}
+        handleFieldDispatch={jest.fn()}
+        value={{
+          taxCategory: '',
+          annualIncome: '',
+        }}
+      />
+    );
+
+    const dropdown = screen.getByText('Tax Details');
+    expect(dropdown).toBeInTheDocument();
+    fireEvent.click(dropdown);
+    expect(mockGetFields).toHaveBeenCalled();
+  });
+});
