@@ -1,684 +1,211 @@
-import React, { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { KeyWithAnyModel, StoreModel } from "../../../utils/model/common-model";
-import {
-  fieldError,
-  getUrl,
-  isFieldUpdate,
-} from "../../../utils/common/change.utils";
-import errorMsg from "../../../assets/_json/error.json";
-import { lastAction } from "../../../utils/store/last-accessed-slice";
-import { postalCodeValidation } from "./number.utils";
-import { postalCodeAction } from "../../../utils/store/postal-code";
-import "./number.scss";
-
-const Number = (props: KeyWithAnyModel) => {
-  const [error, setError] = useState("");  
-  const stageSelector = useSelector((state: StoreModel) => state.stages.stages);
-  const userInputSelector = useSelector(
-    (state: StoreModel) => state.stages.userInput
-  );
-  const updatedStageInputsSelector = useSelector(
-    (state: StoreModel) => state.stages.updatedStageInputs
-  );
-  const fieldErrorSelector = useSelector(
-    (state: StoreModel) => state.fielderror.error
-  );
-  const applicantsSelector = useSelector(
-    (state: StoreModel) => state.stages.userInput.applicants
-  );
-  const dispatch = useDispatch();
-  const [defaultValue, setDefaultValue] = useState("");
-  const [valueUpdate, setValueUpdate] = useState("");
-  const [isPostalCodeFetch, setIsPostalCodeFetch] = useState(false);
-  const [isPostalValue , setPostalValue] = useState("");
-  const applicationJourney = useSelector((state: StoreModel) => state.stages.journeyType);
-  const productCode = stageSelector[0].stageInfo.products[0].product_type;
-  const existingCashone =  (productCode === '280' && applicationJourney === 'ETC') ? true : false;
-  let otherBankfields = (applicantsSelector.credit_into_a_1 === 'Other Bank Account' && (applicantsSelector.other_bank_account_bt_a_1 === '' && applicantsSelector.reenter_other_bank_account_bt_a_1 === ''));
-  const changeHandler = (
-    fieldName: string,
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const inputValue = event.target.value;
-    setDefaultValue(inputValue);
-    if (!event.target.validity.valid) {
-      props.handleCallback(props.data, inputValue);        
-      if ((props.data.mandatory === "Yes" || props.data.mandatory ==="Conditional") && inputValue.length < 1) {
-        setError(`${errorMsg.emity} ${props.data.rwb_label_name}`);
-      } else if (props.data.regex && !(`${inputValue}`.match(props.data.regex))) {
-        setError(`${errorMsg.patterns} ${props.data.rwb_label_name}`)
-      } else if (props.data.min_length && `${inputValue}`.length < props.data.min_length) {
-        setError(`${errorMsg.bankAccountMinLength} ${props.data.min_length} digits`)
-      } else {
-        setError((`${errorMsg.patterns} ${props.data.rwb_label_name}`));
-      }
-    }else{
-      setError("");
-      const fieldValue = event.target.value;
-      setValueUpdate(fieldValue)
-      let checkOtherBank =(existingCashone && (fieldName === 'other_bank_account_bt' || fieldName ==='reenter_other_bank_account_bt')
-       && stageSelector[0].stageId === "ld-1") ? false : true;
-      if (
-        fieldValue &&
-        isPostalValue !== fieldValue && 
-        fieldName === "postal_code" &&
-        event.target.validity.valid
-      ) {
-        setPostalValue(fieldValue)
-        const channelrefNumber =
-          stageSelector[0].stageInfo.application["channel_reference"];
-        setIsPostalCodeFetch(true);
-        dispatch(
-          postalCodeValidation(
-            fieldValue,
-            channelrefNumber,
-            stageSelector[0].stageInfo.applicants
-          )
-        ).then((response: any) => {
-          dispatch(postalCodeAction.setPostalCode(response));
-          setIsPostalCodeFetch(false);
-        });
-      }
-      else if (checkOtherBank && stageSelector[0].stageId !== "ad-2") {
-        props.handleCallback(props.data, event.target.value);     
-      } else {
-        dispatch(isFieldUpdate(props, event.target.value, fieldName));
-        if (accountNumValidation(inputValue,props)) {     
-          props.handleCallback(props.data, inputValue);
-        } else {
-          props.handleCallback(props.data, "");            
-          showAccountNumError();           
-        }           
-      }
-    } 
-  };
-  const showAccountNumError = () => {
-    if (        
-      props.data.logical_field_name === "scb_account_no" ||
-      props.data.logical_field_name === "other_bank_account_bt"
-    ) {
-      setError(errorMsg.sgBankAccountMismatch);
-    } else if (
-      props.data.logical_field_name === "re_enter_scb_account_no" ||
-      props.data.logical_field_name === "reenter_other_bank_account_bt"
-    ) {
-      setError(errorMsg.sgBankAccountMismatch_RE);
-    } else if (props.data.logical_field_name === "other_bank_credit_card_bt") {
-      setError(errorMsg.sgCreditCardNoMismatch);
-    }else if (props.data.logical_field_name === "reenter_other_bank_credit_card_bt") {
-      setError(errorMsg.sgCreditCardNoMismatch_RE);
-    } else {
-      setError(`${errorMsg.emity} ${props.data.rwb_label_name}`);
-    }
-  }
-  const isValidInput = (inputValue:string, props:KeyWithAnyModel) => {
-    if (props.data.regex && !(`${inputValue}`.match(props.data.regex))) {
-      return false;
-    } else if (props.data.min_length && `${inputValue}`.length < props.data.min_length) {
-      return false;
-    } else {
-      return true;
-    }
-  }
-  const accountNumValidation = (inputValue:string, props:KeyWithAnyModel) => {
-    const validFields = ["scb_account_no", "re_enter_scb_account_no", "other_bank_account_bt", "reenter_other_bank_account_bt", "other_bank_credit_card_bt", "reenter_other_bank_credit_card_bt"];
-    if (validFields.indexOf(props.data.logical_field_name) === -1) {
-      return true;
-    }
-    let storeValue: string | null = null;
-    let fieldName: string | null = null;
-    if (props.data.logical_field_name === "scb_account_no") {
-      fieldName = "re_enter_scb_account_no";              
-    } else if (props.data.logical_field_name === "re_enter_scb_account_no") {
-      fieldName = "scb_account_no";
-    } else if (props.data.logical_field_name === "other_bank_account_bt") {
-      fieldName = "reenter_other_bank_account_bt";   
-    } else if (props.data.logical_field_name === "reenter_other_bank_account_bt") {
-      fieldName = "other_bank_account_bt";
-    } else if (props.data.logical_field_name === "other_bank_credit_card_bt") {
-      fieldName = "reenter_other_bank_credit_card_bt";
-    } else if (props.data.logical_field_name === "reenter_other_bank_credit_card_bt") {
-      fieldName = "other_bank_credit_card_bt";      
-    }
-    fieldName = fieldName + "_a_1";
-    if (
-      stageSelector &&
-      stageSelector[0] &&
-      stageSelector[0].stageInfo &&
-      stageSelector[0].stageInfo.applicants
-    ) {
-      let userUpdateValue = null;
-      const userUpdateStageSelector = updatedStageInputsSelector.findIndex(
-        (ref: any) => ref && ref.stageId === stageSelector[0].stageId
-      );
-      if (userUpdateStageSelector > -1) {
-        userUpdateValue = updatedStageInputsSelector[userUpdateStageSelector].applicants[fieldName];
-      }
-      const userInputResponse = userInputSelector.applicants[fieldName];
-      storeValue =
-        userInputResponse ||
-        userUpdateValue ||
-        stageSelector[0].stageInfo.applicants[fieldName];
-    }    
-    return !(storeValue && (inputValue !== storeValue));
-  }; 
-  useEffect(() => {
-    if (
-      stageSelector &&
-      stageSelector[0] &&
-      stageSelector[0].stageInfo &&
-      stageSelector[0].stageInfo.applicants
-    ) {
-      const userInputResponse =
-        userInputSelector.applicants[props.data.logical_field_name + "_a_1"];
-
-      const stageIndex = getUrl
-        .getUpdatedStage()
-        .updatedStageInputs.findIndex(
-          (ref: any) => ref && ref.stageId === stageSelector[0].stageId
-        );
-      let updatedVal = null;
-      if (stageIndex > -1) {
-        updatedVal =
-          getUrl.getUpdatedStage().updatedStageInputs[stageIndex].applicants[
-            props.data.logical_field_name + "_a_1"
-          ];
-      }
-      
-      let fieldValue = "";
-      if (updatedVal) {
-        fieldValue = updatedVal;
-      } else if (userInputResponse) {
-        fieldValue = userInputResponse;
-      } else if (
-        stageSelector[0].stageInfo.applicants[
-          props.data.logical_field_name + "_a_1"
-        ] &&
-        updatedVal !== ""
-      ) {
-        fieldValue =
-          stageSelector[0].stageInfo.applicants[
-            props.data.logical_field_name + "_a_1"
-          ];
-      }
-
-      setDefaultValue(fieldValue);   
-      setValueUpdate(fieldValue)   
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);    
-useEffect(() => {  
-  if (existingCashone && applicantsSelector.other_bank_account_bt_a_1 !== applicantsSelector.reenter_other_bank_account_bt_a_1) {
-    if (applicantsSelector.reenter_other_bank_account_bt_a_1 !== '' && props.data.logical_field_name === "reenter_other_bank_account_bt") {
-      showAccountNumError();
-    }
-  } 
-  if (
-    isValidInput(userInputSelector.applicants[props.data.logical_field_name + "_a_1"], props) &&
-    accountNumValidation(
-      userInputSelector.applicants[props.data.logical_field_name + "_a_1"],
-      props
-    )
-  ) {    
-    if (existingCashone && otherBankfields) {
-      setError(`${errorMsg.patterns} ${props.data.rwb_label_name}`);
-    } else {
-      setError("");
-    }
-    props.handleCallback(
-      props.data,
-      userInputSelector.applicants[props.data.logical_field_name + "_a_1"]
-    );
-  }
-// eslint-disable-next-line react-hooks/exhaustive-deps
-}, [userInputSelector.applicants]);
-  useEffect(() => {
-      dispatch(isFieldUpdate(props, defaultValue, props.data.logical_field_name));
-     let checkOtherBank =(existingCashone && (props.data.logical_field_name === 'other_bank_account_bt' || props.data.logical_field_name ==='reenter_other_bank_account_bt')
-       && stageSelector[0].stageId === "ld-1") ? false : true;
-      if (checkOtherBank && stageSelector[0].stageId !== "ad-2") {
-        props.handleCallback(props.data, defaultValue);
-      }
-      props.handleFieldDispatch(props.data.logical_field_name, defaultValue);         
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [valueUpdate]);
-
-  const bindHandler = (
-    fieldName: string,
-    event: React.FocusEvent<HTMLInputElement>
-  ) => {    
-    const fieldValue = event.target.value;    
-    if (
-      fieldValue &&
-      fieldName !== "postal_code" &&
-      event.target.validity.valid
-    ) {
-      let checkOtherBank =(existingCashone && (fieldName === 'other_bank_account_bt' || fieldName ==='reenter_other_bank_account_bt')
-       && stageSelector[0].stageId === "ld-1") ? false : true;
-      if (checkOtherBank && stageSelector[0].stageId !== "ad-2") {
-        props.handleCallback(props.data, event.target.value);
-      }   
-      setValueUpdate(fieldValue)
-    }    
-
-  };
-
-  useEffect(() => {
-    if (fieldError(fieldErrorSelector, props)) {
-      if (!error) { 
-        if (stageSelector[0].stageId !== "ad-2") {           
-          setError(`${errorMsg.patterns} ${props.data.rwb_label_name}`);        
-        } else if (isValidInput(userInputSelector.applicants[props.data.logical_field_name + "_a_1"], props) && !accountNumValidation(userInputSelector.applicants[props.data.logical_field_name + "_a_1"], props)){
-          showAccountNumError();
-        } else {
-          setError(`${errorMsg.patterns} ${props.data.rwb_label_name}`);
-        }
-      }
-    } else {
-      if (existingCashone && otherBankfields) {
-        setError(`${errorMsg.patterns} ${props.data.rwb_label_name}`);
-      } else {
-        setError("");
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fieldErrorSelector]);
-
-  const placeHolderText = () => {
-    return props.data.rwb_label_name;
-  };
-
-  const focusHandler = (
-    fieldName: string,
-    event: React.FocusEvent<HTMLInputElement>
-  ) => {
-    dispatch(lastAction.getField(fieldName));
-  };
-  const pastefunction = (event: any) => {
-    if (props.data.logical_field_name === 'reenter_other_bank_account_bt') {
-      event.preventDefault();
-    }
-  };
-  return (
-    <>
-      <div className="number text">
-        <label htmlFor={props.data.logical_field_name}>
-          {props.data.rwb_label_name}
-        </label>
-        <input
-          type={props.data.type}
-          name={props.data.logical_field_name}
-          aria-label={props.data.logical_field_name}
-          id={props.data.logical_field_name + "_a_1"}
-          placeholder={placeHolderText()}
-          value={defaultValue}
-          minLength={props.data.min_length}
-          maxLength={props.data.length}
-          pattern={props.data.regex}
-          onChange={changeHandler.bind(this, props.data.logical_field_name)}
-          onBlur={bindHandler.bind(this, props.data.logical_field_name)}
-          disabled={props.data.editable || stageSelector[0].stageId === "bd-1"}
-          onFocus={focusHandler.bind(this, props.data.logical_field_name)}
-          onPaste={pastefunction}
-          className={`${
-            isPostalCodeFetch ? "disabled" : ""
-          }`}
-        />
-        {isPostalCodeFetch && <span className={`${props.data.logical_field_name} circle-spinner`}></span>}
-        {error && <span className="error-msg">{error}</span>}
-      </div>
-    </>
-  );
-};
-
-export default Number;
-
-
-import React from 'react';
-import { render, screen } from '@testing-library/react';
-import { Provider } from 'react-redux';
-import configureStore from 'redux-mock-store';
-import thunk from 'redux-thunk';
-import Number from './number';
-
-const middlewares = [thunk];
-const mockStore = configureStore(middlewares);
-
-jest.mock('./number.utils', () => ({
-  postalCodeValidation: jest.fn(),
-}));
-
-jest.mock('../../../utils/store/postal-code', () => ({
-  postalCodeAction: {
-    setPostalCode: jest.fn(),
-  },
-}));
-
-const initialState = {
-  stages: {
-    stages: [
-      {
-        stageInfo: {
-          products: [{ product_type: '280' }],
-          application: { channel_reference: '12345' },
-          applicants: {
-            other_bank_account_bt_a_1: '',
-            reenter_other_bank_account_bt_a_1: '',
-          },
-        },
-        stageId: 'ld-1',
-      },
-    ],
-    journeyType: 'ETC',
-    userInput: {
-      applicants: {},
-    },
-    updatedStageInputs: [],
-  },
-  fielderror: {
-    error: null,
-  },
-};
-
-const mockProps = {
-  data: {
-    logical_field_name: 'postal_code',
-    rwb_label_name: 'Postal Code',
-    type: 'text',
-    mandatory: 'Yes',
-    regex: '\\d{5}',
-    min_length: 5,
-    length: 5,
-    editable: true,
-  },
-  handleCallback: jest.fn(),
-  handleFieldDispatch: jest.fn(),
-};
-
-const renderComponent = (state = initialState) => {
-  const store = mockStore(state);
-  render(
-    <Provider store={store}>
-      <Number {...mockProps} />
-    </Provider>
-  );
-};
-
-describe('Number Component', () => {
- it('should display an error message for invalid input', () => {
-    renderComponent();
-    
-    expect(screen.getByText(/Postal Code/)).toBeInTheDocument();
-  });
-});
-
 import { render, screen, fireEvent } from '@testing-library/react';
-import { Provider } from 'react-redux';
-import configureStore from 'redux-mock-store';
-import thunk from 'redux-thunk';
-import Number from './number';
+import { useDispatch, useSelector } from 'react-redux';
+import Alias from './alias';
+import { getFields } from './alias.utils';
+import { constant } from './constant';
+import React from 'react';
 
-const middlewares = [thunk];
-const mockStore = configureStore(middlewares);
-
-// Mock dependencies
-jest.mock('./number.utils', () => ({
-  postalCodeValidation: jest.fn(() => Promise.resolve('valid-postal-code')),
+jest.autoMockOff();
+jest.mock("axios", () => ({
+  __esModule: true,
+}));
+jest.mock("@lottiefiles/react-lottie-player", () => ({
+  __esModule: true,
 }));
 
-jest.mock('../../../utils/store/postal-code', () => ({
-  postalCodeAction: {
-    setPostalCode: jest.fn(),
-  },
+jest.mock('react-redux', () => ({
+  useDispatch: jest.fn(),
+  useSelector: jest.fn(),
 }));
 
-jest.mock('../../../utils/field-validation', () => ({
-  accountNumValidation: jest.fn(() => true),
-  showAccountNumError: jest.fn(),
+jest.mock('./alias.utils', () => ({
+  getFields: jest.fn(),
 }));
 
-// Initial state for the mock store
-const initialState = {
-  stages: {
-    stages: [
+
+describe('Alias Component', () => {
+  const mockDispatch = jest.fn(()=>{
+    return [
       {
+        stageId: "ssf-1",
         stageInfo: {
-          application: { channel_reference: '12345' },
-          applicants: {},
-        },
-        stageId: 'ld-1',
-      },
-    ],
-  },
-};
-
-const mockProps = {
-  data: {
-    logical_field_name: 'postal_code',
-    rwb_label_name: 'Postal Code',
-    type: 'text',
-    mandatory: 'Yes',
-    regex: '\\d{5}',
-    min_length: 5,
-    length: 5,
-    editable: true,
-  },
-  handleCallback: jest.fn(),
-  handleFieldDispatch: jest.fn(),
-};
-
-const renderComponent = (state = initialState) => {
-  const store = mockStore(state);
-  render(
-    <Provider store={store}>
-      <Number {...mockProps} />
-    </Provider>
-  );
-};
-
-describe('changeHandler function', () => {
-  it('should set an error if input is invalid and mandatory', () => {
-    renderComponent();
-
-    const input = screen.getByLabelText(/Postal Code/i);
-    fireEvent.change(input, { target: { value: '', validity: { valid: false } } });
-
-    expect(mockProps.handleCallback).toHaveBeenCalledWith(mockProps.data, '');
-    expect(screen.getByText(/Postal Code is required/i)).toBeInTheDocument();
-  });
-
-  it('should set an error if input does not match regex', () => {
-    renderComponent();
-
-    const input = screen.getByLabelText(/Postal Code/i);
-    fireEvent.change(input, { target: { value: '123a', validity: { valid: false } } });
-
-    expect(screen.getByText(/Postal Code is invalid/i)).toBeInTheDocument();
-  });
-
-  it('should set an error if input is less than the minimum length', () => {
-    renderComponent();
-
-    const input = screen.getByLabelText(/Postal Code/i);
-    fireEvent.change(input, { target: { value: '123', validity: { valid: false } } });
-
-    expect(screen.getByText(/Postal Code must be at least 5 digits/i)).toBeInTheDocument();
-  });
-
-  it('should call postalCodeValidation and update the postal code', async () => {
-    renderComponent();
-
-    const input = screen.getByLabelText(/Postal Code/i);
-    fireEvent.change(input, { target: { value: '12345', validity: { valid: true } } });
-
-    expect(mockProps.handleCallback).not.toHaveBeenCalled();
-    expect(screen.getByText(/Validating postal code/i)).toBeInTheDocument();
-  });
-
-  it('should call handleCallback if field is other bank account', () => {
-    renderComponent();
-
-    const input = screen.getByLabelText(/Postal Code/i);
-    fireEvent.change(input, {
-      target: { value: '123456', validity: { valid: true } },
-    });
-
-    expect(mockProps.handleCallback).toHaveBeenCalledWith(mockProps.data, '123456');
-  });
-
-  it('should dispatch isFieldUpdate if checkOtherBank is false', () => {
-    renderComponent();
-
-    const input = screen.getByLabelText(/Postal Code/i);
-    fireEvent.change(input, {
-      target: { value: '654321', validity: { valid: true } },
-    });
-
-    // Ensure action dispatch happens
-    expect(mockProps.handleFieldDispatch).toHaveBeenCalled();
-  });
-});
-
-import { render, screen, fireEvent } from "@testing-library/react";
-import { Provider } from "react-redux";
-import configureStore from "redux-mock-store";
-import thunk from "redux-thunk";
-import React from "react";
-import Number from "./number";
-import * as utils from "./number.utils"; // Mock this for postalCodeValidation
-
-const middlewares = [thunk];
-const mockStore = configureStore(middlewares);
-
-jest.mock("./number.utils", () => ({
-  postalCodeValidation: jest.fn(),
-}));
-
-jest.mock("../../../utils/store/postal-code", () => ({
-  postalCodeAction: {
-    setPostalCode: jest.fn(),
-  },
-}));
-
-const mockProps = {
-  data: {
-    logical_field_name: "postal_code",
-    rwb_label_name: "Postal Code",
-    type: "text",
-    mandatory: "Yes",
-    regex: "\\d{5}",
-    min_length: 5,
-    length: 5,
-    editable: true,
-  },
-  handleCallback: jest.fn(),
-  handleFieldDispatch: jest.fn(),
-};
-
-const renderComponent = (state: any) => {
-  const store = mockStore(state);
-  render(
-    <Provider store={store}>
-      <Number {...mockProps} />
-    </Provider>
-  );
-};
-
-describe("changeHandler Function", () => {
-  const initialState = {
-    stages: {
-      stages: [
-        {
-          stageInfo: {
-            products: [{ product_type: "280" }],
-            application: { channel_reference: "12345" },
-            applicants: {},
-          },
-          stageId: "ld-1",
-        },
-      ],
-      journeyType: "ETC",
-      userInput: {
-        applicants: {},
-      },
-      updatedStageInputs: [],
-    },
-  };
-
-  it("should display an error if input is invalid and mandatory", () => {
-    renderComponent(initialState);
-    const input = screen.getByLabelText(/postal code/i); // Ensure this matches the input's label
-    fireEvent.change(input, { target: { value: "" } });
-
-    expect(mockProps.handleCallback).toHaveBeenCalledWith(mockProps.data, "");
-    expect(screen.getByText(/Postal Code is required/)).toBeInTheDocument();
-  });
-
-  it("should display a regex validation error for invalid input", () => {
-    renderComponent(initialState);
-    const input = screen.getByLabelText(/postal code/i);
-    fireEvent.change(input, { target: { value: "abc" } });
-
-    expect(mockProps.handleCallback).toHaveBeenCalledWith(mockProps.data, "abc");
-    expect(screen.getByText(/Postal Code must match the pattern/)).toBeInTheDocument();
-  });
-
-  it("should validate minimum length and display an error", () => {
-    renderComponent(initialState);
-    const input = screen.getByLabelText(/postal code/i);
-    fireEvent.change(input, { target: { value: "12" } });
-
-    expect(mockProps.handleCallback).toHaveBeenCalledWith(mockProps.data, "12");
-    expect(screen.getByText(/Postal Code must be at least 5 digits/)).toBeInTheDocument();
-  });
-
-  it("should handle postal code validation when valid input is provided", async () => {
-    renderComponent(initialState);
-    const input = screen.getByLabelText(/postal code/i);
-    fireEvent.change(input, { target: { value: "12345" } });
-
-    expect(mockProps.handleCallback).toHaveBeenCalledWith(mockProps.data, "12345");
-    expect(utils.postalCodeValidation).toHaveBeenCalledWith(
-      "12345",
-      "12345",
-      {}
-    );
-  });
-
-  it("should call handleCallback for other valid fields", () => {
-    renderComponent(initialState);
-    const input = screen.getByLabelText(/postal code/i);
-    fireEvent.change(input, { target: { value: "54321" } });
-
-    expect(mockProps.handleCallback).toHaveBeenCalledWith(mockProps.data, "54321");
-    expect(screen.queryByText(/error/i)).not.toBeInTheDocument();
-  });
-
-  it("should handle other bank account validation logic", () => {
-    renderComponent({
-      ...initialState,
-      stages: {
-        ...initialState.stages,
-        stages: [
-          {
-            ...initialState.stages.stages[0],
-            stageId: "ld-1",
-            stageInfo: {
-              ...initialState.stages.stages[0].stageInfo,
-              applicants: {
-                other_bank_account_bt_a_1: "",
-                reenter_other_bank_account_bt_a_1: "",
+          fieldmetadata: {
+            data: {
+              stages: {
+                "bd-2": {
+                  fields: [
+                    {
+                      logical_field_name: "alias",
+                      component_type: "Text",
+                      rwb_label_name: "Alias",
+                    },
+                  ],
+                },
               },
             },
           },
-        ],
+        },
       },
-    });
-    const input = screen.getByLabelText(/other bank account/i); // Adjust the label as per the actual input field
-    fireEvent.change(input, { target: { value: "54321" } });
+    ]
+  });
+  const mockGetFields = jest.fn();
+  beforeEach(() => {
+    jest.spyOn(console, 'error').mockImplementation(()=>{});
+    jest.clearAllMocks();
+    (useDispatch as jest.Mock).mockReturnValue(mockDispatch);
+    jest.spyOn(React,'useState')
+      .mockImplementationOnce(()=>[[{
+        "logical_field_name": "alias_1",
+        "lov_field_name": "Alias",
+        "rwb_label_name": "Alias (s) 1",
+        "field_set": "Yes",
+        "field_set_name": "Personal Details",
+        "component_type": "Text",
+        "mandatory": "Conditional",
+        "length": "105",
+        "type": "Text",
+        "regex": "^[a-zA-Z-@&().,'/]+(?: [a-zA-Z-@&().,'/]+)*$",
+        "hide_remove_btn": true
+    }],jest.fn()]);
 
-    expect(mockProps.handleCallback).toHaveBeenCalledWith(mockProps.data, "54321");
+      
+    (getFields as jest.Mock).mockImplementation(mockGetFields);
+  });
+
+  it('should call getFields on initial render with "get" action', () => {
+    (useSelector as jest.Mock).mockImplementation((selectorFn)=>{
+      if (selectorFn.toString().includes('state.stages.stages')){
+          return [{
+            "stageId": "bd-2",
+            "stageInfo": {
+              "application": {
+                "source_system_name": 3
+              }
+            }
+          }];
+      }
+      if (selectorFn.toString().includes('state.alias')){
+        return {
+          count: 1,
+          fields: ['alias_1'],
+          maxCount: 4
+        };
+    }
+    if (selectorFn.toString().includes('state.stages.journeyType')){
+      return true
+  }
+      return null;
+    });
+    render(<Alias handleCallback={jest.fn()} handleFieldDispatch={jest.fn()} value={{
+      "marital_status": null,
+      "education_level": "",
+      "country": "",
+      "ownership_status": "",
+      "gender": "",
+      "country_of_birth": ""
+  }} />);
+    expect(mockDispatch).toHaveBeenCalled();
+    const button = screen.getByPlaceholderText(constant.placeholder);
+    expect(button).toHaveClass('show-btn, button');
+    fireEvent.click(button);
+    expect(mockGetFields).toHaveBeenCalled();
+  });
+
+  it('hide button should render', () => {
+    (useDispatch as jest.Mock).mockReturnValue(mockDispatch);
+    jest.spyOn(React,'useState')
+      .mockImplementationOnce(()=>[[],jest.fn()]);
+
+    (useSelector as jest.Mock).mockImplementation((selectorFn)=>{
+      if (selectorFn.toString().includes('state.stages.stages')){
+          return [{
+            "stageId": "bd-2",
+            "stageInfo": {
+              "application": {
+                "source_system_name": 3
+              }
+            }
+          }];
+      }
+      if (selectorFn.toString().includes('state.alias')){
+        return {
+        };
+    }
+    if (selectorFn.toString().includes('state.stages.journeyType')){
+      return true
+  }
+      return null;
+    });
+    render(<Alias handleCallback={jest.fn()} handleFieldDispatch={jest.fn()} value={{
+      "marital_status": null,
+      "education_level": "",
+      "country": "",
+      "ownership_status": "",
+      "gender": "",
+      "country_of_birth": ""
+  }} />);
+    expect(mockDispatch).toHaveBeenCalled();
+    const button = screen.getByPlaceholderText(constant.placeholder);
+    expect(button).toHaveClass('hide-btn');
+    fireEvent.click(button);
+    expect(mockGetFields).toHaveBeenCalled();
   });
 });
 
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { KeyWithAnyModel ,StoreModel} from "../../utils/model/common-model";
+//import "./alias.scss";
+import { getFields } from "./tax.utils";
+import renderComponent from "../../modules/dashboard/fields/renderer";
+import { constant } from "../components/alias/constant";
+
+export const Tax = (props: KeyWithAnyModel) => {
+ const stageSelector = useSelector(
+    (state: StoreModel) => state.stages.stages
+  );
+
+  const journeyType = useSelector((state: StoreModel) => state.stages.journeyType);
+
+  const taxSelector = useSelector(
+    (state: StoreModel) => state.tax
+  );
+
+  const dispatch = useDispatch();
+  const [field, setField] = useState([]);
+  const addNewAliasName = () => {
+    const stageComponents = dispatch(
+        getFields(stageSelector, taxSelector, "add")
+    );
+    setField(stageComponents);
+  };
+
+  useEffect(() => {
+        /* istanbul ignore else */
+    if (stageSelector) {
+      const stageComponents = dispatch(
+        getFields(stageSelector, taxSelector, "get")
+      );
+      setField(stageComponents);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [taxSelector]);
+
+    return (
+        <>
+         {field &&
+          field.map((currentSection: KeyWithAnyModel, index: number) => {
+            return renderComponent(
+              currentSection,
+              index,
+              props.handleCallback,
+              props.handleFieldDispatch,
+              props.value
+            );
+          })}
+         
+         </>
+        )
+}
+
+export default Tax;
