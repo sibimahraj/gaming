@@ -565,6 +565,134 @@ describe("Model Component", () => {
 
 I've fixed the Redux store structure and added a test case specifically for crs_reason_code. Now, all necessary branches and conditions should be covered properly. Let me know if anything else needs refinement.
 
+const handlebuttonClick = (index: number) => {
+    if (props.name === "postal_code") {
+      setButtonClicked(true);
+      trackEvents.triggerAdobeEvent(
+        "ctaClick",
+        `${modelData.buttons[index],modelData.PostalCodebuttons[index]}:${header_content}`,
+        {},
+        modelData.header_content
+      );
+      if (rateSelector.ar) {
+        props.handlebuttonClick();
+      } else E{
+        if (pincode && pincode.length >= postalMinLen) {
+         dispatch(formConfig('manual',stageSelector[0].stageInfo))
+          dispatch(stagesAction.updateLastStageInput); 
+          let stateInfofield = stageSelector[0].stageInfo;
+          const productCategory = stageSelector[0].stageInfo.products.map((product:any)=>product.product_category);
+          const productCategories=productCategory.join(",");
+          let fieldUpdate:any;
+          fieldUpdate = {...stateInfofield,
+            applicants:{
+              ...stateInfofield.applicants,
+              first_name_a_1:stateInfofield.applicants.full_name_a_1,
+              address_usage_indicator_a_1: "MIF",
+              product_categories:productCategories
+            }
+            }
+            let channelReferenceNumber = getTokenChno().channelRefNo;
+          channelReference(fieldUpdate,channelReferenceNumber,dispatch).then((response:any)=>{
+            setBasicResponse(response.data);
+            if(stageSelector[0].stageInfo.products[1].product_category === 'PL'){
+              //  dispatch(rateRequest("34567",stageSelector[0].stageInfo))
+               dispatch(stagesAction.updateLastStageInput(stageSelector[0].stageId));
+               setFields(
+                 stageFields(
+                   stageSelector,
+                   "ld-1",
+                )
+               );
+               stateUrl("ld-1");
+               dispatch(stagesAction.resetCurrentStage("ld-1"));
+               dispatch(stagesAction.updateStageId("ld-1"));
+             }
+          } )
+ 
+      }
+    }}
+    else Eif (props.name === "nationalityHardStop" || props.name === "showTrustInfo" || props.name === "showLoanInfo" || props.name === "showEIRInfo" || props.name === "preferred_limit" || props.name === "preferred_credit_limit" || props.name === "contact_preference" || props.name === "enter_account_info") {
+      props.handlebuttonClick();
+      trackEvents.triggerAdobeEvent(
+        "ctaClick",
+        `${modelData.buttons[index]}:${header_content}`,
+        {},
+        header_content 
+      );
+    } else {
+      trackEvents.triggerAdobeEvent(
+        "ctaClick",
+        `${modelData.buttons[index]}:${header_content}`,
+        {},
+        header_content
+      );
+      if (props.name === "CCThankYou") {
+        if (index === 0) {
+          if (props.handleContinueWithoutActivation) {
+            props.handleContinueWithoutActivation();
+          } else {
+            props.handlebuttonClick();
+          }
+        } else {
+          props.handlebuttonClick();
+        }
+      } else if (props.name === "CCCardActivation") {
+        if (props.handleOTPSuccessClick) {
+          props.handleOTPSuccessClick();
+        } else {
+          props.handlebuttonClick();  
+         }
+                 
+      } else if (index === 0 && !props.callBackMethod && (referralcodeSelector  && referralcodeSelector.refer && referralcodeSelector.refer !== "true")) {
+        if (
+          (getUrl.getParameterByName("SSCode") || getUrl.getParameterByName("transfer-token")) || getUrl.getUpdatedStage().ccplChannel =="IBK" || getUrl.getUpdatedStage().ccplChannel =="MBNK" ||
+          (stageSelector && stageSelector.length > 0  &&
+            (stageSelector[0].stageInfo.applicants["auth_mode_a_1"] === "IX" || stageSelector[0].stageInfo.applicants["auth_mode_a_1"] === "IM")
+        )) {
+          if (getUrl.getParameterByName("source") === "scm") {
+            //Ibanking redirection for app
+            window.location.href = `${process.env.REACT_APP_IBANKING_SC_MOBILE}`;
+          } else {
+            redirectingToIbanking();
+          }
+        } else {
+          window.location.href = `${process.env.REACT_APP_HOME_PAGE_URL}`;
+        }
+      }else if (
+        props.name === "referral_code" &&
+        (referralcodeSelector.refer !== null ||
+          (referralcodeSelector.refer === null && resumeSelector))
+      ) {
+        if (index === 0) {
+          props.setContinueWithoutReferralcode(false);
+          props.setShowReferralcodePopup(false);
+          dispatch(
+            referralcodeAction.setReferralErrorMsg(
+                errorMsg.referralcodeerror 
+            )
+          );
+        } else {
+          props.setContinueWithoutReferralcode(true);
+          props.setShowReferralcodePopup(false);
+          dispatch(
+            referralcodeAction.setReferralErrorMsg("")
+          );
+        }
+      } else if(props.name==="country_of_tax_residence"){
+        props.handlebuttonClick()
+      }
+      else if(props.name==="crs_reason_code"){
+        props.handlebuttonClick()
+      }
+      else if (props.handlebuttonClick) {
+        if(index===0&&props.name!=="other_name_or_alias"){
+        window.location.href = `${process.env.REACT_APP_HOME_PAGE_URL}`};
+        props.handlebuttonClick();
+      }
+    }
+  };
+
 
 
 
