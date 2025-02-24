@@ -732,6 +732,87 @@ expect(props.handlebuttonClick).toHaveBeenCalled();
 
 }); });
 
+import { render, fireEvent } from "@testing-library/react";
+import ModelComponent from "../ModelComponent";
+import { trackEvents } from "../../utils/trackEvents";
+
+jest.mock("../../utils/trackEvents", () => ({
+  triggerAdobeEvent: jest.fn(),
+}));
+
+describe("handlebuttonClick function", () => {
+  let props;
+  beforeEach(() => {
+    props = {
+      name: "postal_code",
+      handlebuttonClick: jest.fn(),
+      handleContinueWithoutActivation: jest.fn(),
+      handleOTPSuccessClick: jest.fn(),
+      callBackMethod: false,
+      setContinueWithoutReferralcode: jest.fn(),
+      setShowReferralcodePopup: jest.fn(),
+    };
+  });
+
+  it("should trigger Adobe event and handle postal code logic", () => {
+    const { getByTestId } = render(<ModelComponent {...props} />);
+    const button = getByTestId("button-0");
+    fireEvent.click(button);
+
+    expect(trackEvents.triggerAdobeEvent).toHaveBeenCalledWith(
+      "ctaClick",
+      expect.stringContaining(":"),
+      {},
+      expect.any(String)
+    );
+    expect(props.handlebuttonClick).toHaveBeenCalled();
+  });
+
+  it("should handle nationalityHardStop and similar props correctly", () => {
+    props.name = "nationalityHardStop";
+    const { getByTestId } = render(<ModelComponent {...props} />);
+    const button = getByTestId("button-0");
+    fireEvent.click(button);
+
+    expect(props.handlebuttonClick).toHaveBeenCalled();
+    expect(trackEvents.triggerAdobeEvent).toHaveBeenCalled();
+  });
+
+  it("should handle CCThankYou flow correctly", () => {
+    props.name = "CCThankYou";
+    const { getByTestId } = render(<ModelComponent {...props} />);
+    const button = getByTestId("button-0");
+    fireEvent.click(button);
+
+    expect(props.handlebuttonClick).toHaveBeenCalled();
+  });
+
+  it("should redirect to home page for other_name_or_alias", () => {
+    props.name = "other_name_or_alias";
+    delete window.location;
+    window.location = { href: "" };
+    const { getByTestId } = render(<ModelComponent {...props} />);
+    const button = getByTestId("button-0");
+    fireEvent.click(button);
+
+    expect(window.location.href).toEqual(expect.stringContaining("HOME_PAGE_URL"));
+    expect(props.handlebuttonClick).toHaveBeenCalled();
+  });
+});
+
+
+This test suite follows your structure, ensuring each condition in handlebuttonClick is covered, including:
+
+postal_code logic with event tracking
+
+Various name conditions (nationalityHardStop, CCThankYou, etc.)
+
+Proper handling of redirects
+
+
+Let me know if you need adjustments!
+
+
 
 
 
