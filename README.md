@@ -1143,3 +1143,48 @@ expect(store.dispatch).toHaveBeenCalled();
 
 }); });
 
+import { render, screen, fireEvent } from "@testing-library/react"; import { Provider } from "react-redux"; import configureStore from "redux-mock-store"; import Model from "./Model"; import trackEvents from "../../../services/track-events";
+
+jest.mock("../../../services/track-events", () => ({ triggerAdobeEvent: jest.fn(), }));
+
+const mockStore = configureStore([]);
+
+const renderComponent = (props, initialState = {}) => { const store = mockStore(initialState); return render( <Provider store={store}> <Model {...props} /> </Provider> ); };
+
+describe("Model Component", () => { let props;
+
+beforeEach(() => { props = { name: "postal_code", handlebuttonClick: jest.fn(), }; });
+
+test("renders correctly with postal_code popup", () => { renderComponent(props, { stages: { stages: [{ stageInfo: { fieldmetaData: { data: { stages: [{ fields: [{ logical_field_name: "postal_code", min_length: 6 }] }] } } } }] }, rate: { ar: "5.6", eir: "6.2" }, });
+
+expect(screen.getByPlaceholderText("Enter postal code")).toBeInTheDocument();
+expect(screen.getByText("5.6% p.a.")).toBeInTheDocument();
+expect(screen.getByText("(EIR 6.2% p.a.)")).toBeInTheDocument();
+
+});
+
+test("triggers adobe event on mount", () => { renderComponent(props); expect(trackEvents.triggerAdobeEvent).toHaveBeenCalledWith("popupViewed", "postal_code"); });
+
+test("updates pincode on valid input", () => { renderComponent(props); const input = screen.getByPlaceholderText("Enter postal code"); fireEvent.change(input, { target: { value: "123456" } }); expect(input.value).toBe("123456"); });
+
+test("does not update pincode on invalid input", () => { renderComponent(props); const input = screen.getByPlaceholderText("Enter postal code"); fireEvent.change(input, { target: { value: "123" } }); expect(input.value).toBe("123"); // But won't set pincode in state });
+
+test("triggers button click event correctly", () => { renderComponent(props); const button = screen.getAllByText("Continue")[0]; fireEvent.click(button); expect(props.handlebuttonClick).toHaveBeenCalled(); });
+
+test("shows error when clicking without pincode", () => { renderComponent(props); const button = screen.getAllByText("Continue")[0]; fireEvent.click(button); expect(screen.getByText("Please enter a valid postal code")).toBeInTheDocument(); });
+
+test("renders correctly for CCThankYou modal", () => { props.name = "CCThankYou"; renderComponent(props); expect(screen.getByText("Continue Without Activation")).toBeInTheDocument(); });
+
+test("triggers handleContinueWithoutActivation correctly", () => { props.name = "CCThankYou"; props.handleContinueWithoutActivation = jest.fn(); renderComponent(props); fireEvent.click(screen.getByText("Continue Without Activation")); expect(props.handleContinueWithoutActivation).toHaveBeenCalled(); });
+
+test("renders correctly for referral_code", () => { props.name = "referral_code"; renderComponent(props, { referralcode: { refer: null }, urlParam: { resume: true }, }); expect(screen.getByText("Enter Referral Code")).toBeInTheDocument(); });
+
+test("triggers button click for referral code", () => { props.name = "referral_code"; props.setContinueWithoutReferralcode = jest.fn(); props.setShowReferralcodePopup = jest.fn(); renderComponent(props);
+
+const buttons = screen.getAllByText(/Continue/);
+fireEvent.click(buttons[1]);
+expect(props.setContinueWithoutReferralcode).toHaveBeenCalledWith(true);
+expect(props.setShowReferralcodePopup).toHaveBeenCalledWith(false);
+
+}); });
+
