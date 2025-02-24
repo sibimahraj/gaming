@@ -306,3 +306,46 @@ describe("SelectionBox Component", () => {
 });
 
 
+import { render, screen, fireEvent } from "@testing-library/react"; import { Provider } from "react-redux"; import configureStore from "redux-mock-store"; import Model from "./Model"; import trackEvents from "../../../services/track-events";
+
+jest.mock("../../../services/track-events", () => ({ triggerAdobeEvent: jest.fn() }));
+
+const mockStore = configureStore([]);
+
+describe("Model Component", () => { let store; let mockProps;
+
+beforeEach(() => { store = mockStore({ stages: { stages: [{ stageInfo: { fieldmetaData: { data: { stages: [] } }, applicants: {} }] } }, referralcode: {}, urlParam: { resume: null }, rate: { ar: "5.5", eir: "6.0" } });
+
+mockProps = {
+  name: "postal_code",
+  handlebuttonClick: jest.fn(),
+  handleContinueWithoutActivation: jest.fn(),
+  handleOTPSuccessClick: jest.fn(),
+  callBackMethod: jest.fn(),
+  setContinueWithoutReferralcode: jest.fn(),
+  setShowReferralcodePopup: jest.fn(),
+  isTooltip: false,
+  body_content: ""
+};
+
+});
+
+const renderComponent = (props = mockProps) => { return render( <Provider store={store}> <Model {...props} /> </Provider> ); };
+
+test("should render the component with postal_code and trigger Adobe Event", () => { renderComponent(); expect(trackEvents.triggerAdobeEvent).toHaveBeenCalledWith("popupViewed", "postal_code"); });
+
+test("should update postal code input field", () => { renderComponent(); const input = screen.getByPlaceholderText("Enter postal code"); fireEvent.change(input, { target: { value: "123456" } }); expect(input.value).toBe("123456"); });
+
+test("should not set pincode when input length is less than min length", () => { renderComponent(); const input = screen.getByPlaceholderText("Enter postal code"); fireEvent.change(input, { target: { value: "123" } }); expect(input.value).toBe("123"); });
+
+test("should trigger handlebuttonClick for postal_code on valid input", () => { renderComponent(); const button = screen.getByText("Submit"); fireEvent.click(button); expect(mockProps.handlebuttonClick).toHaveBeenCalled(); });
+
+test("should handle crs_reason_code scenario correctly", () => { mockProps.name = "crs_reason_code"; renderComponent(); const button = screen.getByText("Submit"); fireEvent.click(button); expect(mockProps.handlebuttonClick).toHaveBeenCalled(); });
+
+test("should handle referral_code logic", () => { mockProps.name = "referral_code"; renderComponent(); const button = screen.getByText("Submit"); fireEvent.click(button); expect(mockProps.setContinueWithoutReferralcode).toHaveBeenCalled(); });
+
+test("should redirect when name is nationalityHardStop", () => { mockProps.name = "nationalityHardStop"; renderComponent(); const button = screen.getByText("Submit"); fireEvent.click(button); expect(mockProps.handlebuttonClick).toHaveBeenCalled(); }); });
+
+
+
+
