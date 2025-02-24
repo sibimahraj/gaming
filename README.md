@@ -1099,3 +1099,47 @@ const Model = (props: KeyWithAnyModel) => {
 };
 
 export default Model;
+
+
+import React from "react"; import { render, screen, fireEvent } from "@testing-library/react"; import { Provider } from "react-redux"; import configureStore from "redux-mock-store"; import Model from "../Model"; // Adjust path as needed
+
+const mockStore = configureStore([]);
+
+describe("Model Component", () => { let store;
+
+beforeEach(() => { store = mockStore({ stages: { stages: [{}] }, referralcode: {}, urlParam: { resume: false }, rate: { ar: "5.5", eir: "6.2" }, }); store.dispatch = jest.fn(); });
+
+it("renders correctly with default props", () => { render( <Provider store={store}> <Model name="default_model" handlebuttonClick={jest.fn()} /> </Provider> ); expect(screen.getByText("default_model")).toBeInTheDocument(); });
+
+it("handles postal code input and button click", () => { render( <Provider store={store}> <Model name="postal_code" handlebuttonClick={jest.fn()} /> </Provider> );
+
+const input = screen.getByPlaceholderText("Enter postal code");
+fireEvent.change(input, { target: { value: "123456" } });
+expect(input.value).toBe("123456");
+
+const rateButton = screen.getByText("Check Rate"); // Adjust based on actual button text
+fireEvent.click(rateButton);
+expect(store.dispatch).toHaveBeenCalled();
+
+});
+
+it("handles referral code flow", () => { render( <Provider store={store}> <Model name="referral_code" setShowReferralcodePopup={jest.fn()} /> </Provider> );
+
+expect(screen.getByText(/referral/i)).toBeInTheDocument();
+
+});
+
+it("handles age hard stop case", () => { render( <Provider store={store}> <Model name="ageHardStop" /> </Provider> );
+
+expect(screen.getByText("Age Hard Stop")).toBeInTheDocument();
+
+});
+
+it("triggers correct button click tracking", () => { render( <Provider store={store}> <Model name="some_model" handlebuttonClick={jest.fn()} /> </Provider> );
+
+const button = screen.getByText("OK"); // Adjust based on actual button text
+fireEvent.click(button);
+expect(store.dispatch).toHaveBeenCalled();
+
+}); });
+
