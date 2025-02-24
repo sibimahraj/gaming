@@ -454,4 +454,119 @@ I've updated the test cases to ensure full coverage, including the crs_reason_co
 
 
 
+import React from "react";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { Provider } from "react-redux";
+import configureStore from "redux-mock-store";
+import Model from "./Model";
+import trackEvents from "../../../services/track-events";
+import { formConfig, channelReference } from "../../../services/common-service";
+import { stagesAction } from "../../../utils/store/stages-slice";
+
+jest.mock("../../../services/track-events", () => ({
+  triggerAdobeEvent: jest.fn(),
+}));
+
+jest.mock("../../../services/common-service", () => ({
+  formConfig: jest.fn(),
+  channelReference: jest.fn(() => Promise.resolve({ data: {} })),
+}));
+
+jest.mock("../../../utils/store/stages-slice", () => ({
+  stagesAction: {
+    updateLastStageInput: jest.fn(),
+    resetCurrentStage: jest.fn(),
+    updateStageId: jest.fn(),
+  },
+}));
+
+const mockStore = configureStore([]);
+
+describe("Model Component", () => {
+  let store;
+
+  beforeEach(() => {
+    store = mockStore({
+      stages: {
+        stages: [{
+          stageInfo: {
+            fieldmetaData: {
+              data: {
+                stages: [{
+                  fields: [
+                    {
+                      logical_field_name: "postal_code",
+                      min_length: 6,
+                    },
+                  ],
+                }],
+              },
+            },
+            applicants: { auth_mode_a_1: "IX" },
+            products: [{ product_category: "PL" }],
+          },
+        }],
+      },
+      referralcode: { refer: null },
+      urlParam: { resume: null },
+      rate: { ar: "5", eir: "10" },
+    });
+  });
+
+  it("should render Model component and trigger Adobe event", () => {
+    render(
+      <Provider store={store}>
+        <Model name="postal_code" handlebuttonClick={jest.fn()} />
+      </Provider>
+    );
+    expect(trackEvents.triggerAdobeEvent).toHaveBeenCalledWith(
+      "popupViewed",
+      "postal_code"
+    );
+  });
+
+  it("should handle postal code change", () => {
+    render(
+      <Provider store={store}>
+        <Model name="postal_code" handlebuttonClick={jest.fn()} />
+      </Provider>
+    );
+    const input = screen.getByPlaceholderText("Enter postal code");
+    fireEvent.change(input, { target: { value: "123456" } });
+    expect(input.value).toBe("123456");
+  });
+
+  it("should handle button click when postal code is valid", async () => {
+    const mockDispatch = jest.fn();
+    store.dispatch = mockDispatch;
+    render(
+      <Provider store={store}>
+        <Model name="postal_code" handlebuttonClick={jest.fn()} />
+      </Provider>
+    );
+    const button = screen.getByText("Submit");
+    fireEvent.click(button);
+    expect(mockDispatch).toHaveBeenCalledWith(expect.any(Function));
+  });
+
+  it("should trigger specific scenario for crs_reason_code", () => {
+    const handleClickMock = jest.fn();
+    render(
+      <Provider store={store}>
+        <Model name="crs_reason_code" handlebuttonClick={handleClickMock} />
+      </Provider>
+    );
+    const button = screen.getByText("Submit");
+    fireEvent.click(button);
+    expect(handleClickMock).toHaveBeenCalled();
+  });
+});
+
+
+I've fixed the Redux store structure and added a test case specifically for crs_reason_code. Now, all necessary branches and conditions should be covered properly. Let me know if anything else needs refinement.
+
+
+
+
+
 
